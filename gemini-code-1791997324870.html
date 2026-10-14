@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>GEO地名でGO! - タイ文字＆現地文字 読み撃破道場</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700;900&family=Noto+Serif+JP:wght@700;900&family=Noto+Sans:wght@700;900&family=Noto+Sans+Arabic:wght@700&family=Noto+Sans+Thai:wght@600;700;900&family=Noto+Sans+KR:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #0f0a0a;
+    --accent-gold: #f59e0b;
+    --accent-red: #dc2626;
+  }
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    font-family: 'Noto Sans JP', 'Noto Sans Thai', 'Noto Sans', 'Noto Sans KR', 'Noto Sans Arabic', sans-serif;
+    background-color: var(--bg-primary);
+    color: #f8fafc;
+    overflow-x: hidden;
+    user-select: none;
+  }
+  .serif-heavy {
+    font-family: 'Noto Serif JP', serif;
+  }
+  .speed-lines {
+    background: repeating-conic-gradient(
+      from 0deg,
+      rgba(255, 255, 255, 0.03) 0deg 2deg,
+      transparent 2deg 7deg
+    );
+    animation: spin-slow 40s linear infinite;
+  }
+  @keyframes spin-slow {
+    from { transform: rotate(0deg) scale(1.6); }
+    to { transform: rotate(360deg) scale(1.6); }
+  }
+  @keyframes zoom-pressure {
+    0% { transform: scale(0.85); opacity: 0; }
+    15% { transform: scale(1.0); opacity: 1; }
+    100% { transform: scale(1.12); opacity: 1; }
+  }
+  .pressure-sign {
+    animation: zoom-pressure 10s ease-out forwards;
+  }
+  @keyframes shake-hard {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    20% { transform: translate(-10px, 6px) rotate(-2deg); }
+    40% { transform: translate(10px, -6px) rotate(2deg); }
+    60% { transform: translate(-8px, -4px) rotate(-1deg); }
+    80% { transform: translate(8px, 4px) rotate(1deg); }
+  }
+  .shake-effect {
+    animation: shake-hard 0.38s cubic-bezier(.36,.07,.19,.97) both;
+  }
+  @keyframes stamp-pop {
+    0% { transform: scale(2.8) rotate(-12deg); opacity: 0; }
+    60% { transform: scale(0.92) rotate(-6deg); opacity: 1; }
+    100% { transform: scale(1) rotate(-6deg); opacity: 1; }
+  }
+  .stamp-anim {
+    animation: stamp-pop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+  .sign-thai-green {
+    background: linear-gradient(180deg, #007a3d 0%, #00582c 100%);
+    border: 4px solid #ffffff;
+    box-shadow: 0 0 0 3px #007a3d, 0 16px 40px rgba(0,0,0,0.85);
+    color: #ffffff;
+  }
+  .sign-thai-kmpost {
+    background: linear-gradient(180deg, #18181b 0%, #18181b 28%, #ffffff 28%, #f4f4f5 100%);
+    border: 4px solid #18181b;
+    box-shadow: 0 0 0 3px #ffffff, 0 16px 40px rgba(0,0,0,0.85);
+    color: #09090b;
+  }
+  .sign-thai-kmpost #signHeaderSub {
+    color: #ffffff;
+    opacity: 1;
+  }
+  .sign-russian-blue {
+    background: linear-gradient(180deg, #0039a6 0%, #002670 100%);
+    border: 4px solid #ffffff;
+    box-shadow: 0 0 0 3px #0039a6, 0 16px 40px rgba(0,0,0,0.85);
+    color: #ffffff;
+  }
+  .sign-russian-white {
+    background: #ffffff;
+    border: 4px solid #1e293b;
+    box-shadow: 0 0 0 3px #ffffff, 0 16px 40px rgba(0,0,0,0.85);
+    color: #0f172a;
+  }
+  .sign-euro-green {
+    background: linear-gradient(180deg, #006847 0%, #004d35 100%);
+    border: 4px solid #ffffff;
+    box-shadow: 0 0 0 3px #006847, 0 16px 40px rgba(0,0,0,0.85);
+    color: #ffffff;
+  }
+  .sign-greek-blue {
+    background: linear-gradient(180deg, #003399 0%, #002266 100%);
+    border: 4px solid #ffcc00;
+    box-shadow: 0 0 0 3px #003399, 0 16px 40px rgba(0,0,0,0.85);
+    color: #ffcc00;
+  }
+  .sign-korea-green {
+    background: linear-gradient(180deg, #005c36 0%, #004226 100%);
+    border: 4px solid #ffffff;
+    box-shadow: 0 0 0 3px #005c36, 0 16px 40px rgba(0,0,0,0.85);
+    color: #ffffff;
+  }
+  .sign-mideast-brown {
+    background: linear-gradient(180deg, #1e3a8a 0%, #172554 100%);
+    border: 4px solid #f8fafc;
+    box-shadow: 0 0 0 3px #1e3a8a, 0 16px 40px rgba(0,0,0,0.85);
+    color: #ffffff;
+  }
+  .crisis-vignette {
+    box-shadow: inset 0 0 90px rgba(220, 38, 38, 0.75);
+    animation: pulse-danger 0.6s infinite alternate;
+  }
+  @keyframes pulse-danger {
+    from { opacity: 0.4; }
+    to { opacity: 1; }
+  }
+</style>
+</head>
+<body class="min-h-screen flex flex-col relative overflow-x-hidden">
+
+<div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+  <div class="speed-lines w-full h-full"></div>
+  <div class="absolute inset-0 bg-radial from-transparent via-black/40 to-black/90"></div>
+</div>
+
+<div id="crisisOverlay" class="fixed inset-0 pointer-events-none z-20 hidden crisis-vignette"></div>
+
+<header class="relative z-30 border-b-2 border-amber-500/40 bg-zinc-950/90 backdrop-blur-md px-3 py-2 flex flex-wrap items-center justify-between gap-2">
+  <button onclick="app.showHome()" class="flex items-center gap-2 text-left">
+    <div class="bg-gradient-to-br from-red-600 to-amber-600 px-2.5 py-1 rounded border border-amber-300 shadow-lg">
+      <span class="serif-heavy font-black text-base sm:text-lg tracking-wider text-white">GEO地名でGO!</span>
+    </div>
+  </button>
+
+  <div class="flex items-center gap-1.5 flex-wrap">
+    <button id="btnSound" onclick="app.toggleSound()" class="px-2.5 py-1 rounded text-xs font-bold border border-amber-500/60 bg-amber-950/40 text-amber-300">
+      音: ON
+    </button>
+    <button onclick="app.toggleCheatSheet()" class="px-2.5 py-1 rounded text-xs font-bold border border-emerald-500/70 bg-emerald-950/50 text-emerald-300">
+      解読チャート
+    </button>
+  </div>
+</header>
+
+<main id="mainContainer" class="relative z-10 flex-1 flex flex-col items-center justify-center p-3 sm:p-4 max-w-4xl w-full mx-auto">
+
+  <!-- ホーム画面 -->
+  <section id="screenHome" class="w-full space-y-5">
+    <div class="text-center space-y-1.5 py-1">
+      <div class="inline-block px-3 py-0.5 rounded-full bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 text-[11px] font-bold tracking-widest">
+        MOBILE & VOICE READY
+      </div>
+      <h1 class="serif-heavy text-3xl sm:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white via-amber-200 to-amber-500">
+        GEO地名でGO!
+      </h1>
+      <p class="text-xs sm:text-sm text-zinc-300 max-w-xl mx-auto">
+        声に出して即撃破！電車内など声が出せない場所では<strong>「スマホ4択パネル」</strong>またはタイピングでも回答できます！
+      </p>
+    </div>
+
+    <div class="bg-zinc-900/90 border border-zinc-700/80 rounded-xl p-3.5 grid grid-cols-1 sm:grid-cols-2 gap-3 shadow-xl">
+      <div>
+        <label class="block text-xs font-bold text-amber-400 mb-1">制限時間（1問あたり）</label>
+        <div class="grid grid-cols-3 gap-1.5">
+          <button onclick="app.setTimeLimit(6)" id="time6" class="py-2 rounded font-bold text-xs border border-zinc-700 bg-zinc-800 text-zinc-400">鬼 (6秒)</button>
+          <button onclick="app.setTimeLimit(10)" id="time10" class="py-2 rounded font-bold text-xs border border-amber-500 bg-amber-600/30 text-white">標準 (10秒)</button>
+          <button onclick="app.setTimeLimit(15)" id="time15" class="py-2 rounded font-bold text-xs border border-zinc-700 bg-zinc-800 text-zinc-400">じっくり (15秒)</button>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-amber-400 mb-1">スマホ用 4択アシストパネル</label>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button id="choiceOn" onclick="app.setChoiceAssist(true)" class="py-2 px-3 rounded font-bold text-xs border border-amber-500 bg-amber-600/30 text-white">
+            4択ボタン表示 (スマホ推奨)
+          </button>
+          <button id="choiceOff" onclick="app.setChoiceAssist(false)" class="py-2 px-3 rounded font-bold text-xs border border-zinc-700 bg-zinc-800 text-zinc-400">
+            非表示 (声・入力のみ)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5" id="packGrid"></div>
+  </section>
+
+  <!-- バトル画面 -->
+  <section id="screenBattle" class="w-full hidden space-y-3">
+    <div class="bg-zinc-950/90 border border-zinc-800 rounded-xl p-2.5 flex flex-wrap items-center justify-between gap-2 shadow-lg">
+      <div class="flex items-center gap-3">
+        <div>
+          <div class="text-[10px] text-zinc-400 font-bold">STAGE</div>
+          <div class="text-base font-black text-amber-400" id="hudProgress">1 / 15</div>
+        </div>
+        <div>
+          <div class="text-[10px] text-zinc-400 font-bold">LIFE</div>
+          <div class="text-base font-black text-red-500" id="hudLives"></div>
+        </div>
+        <div>
+          <div class="text-[10px] text-zinc-400 font-bold">SCORE</div>
+          <div class="text-base font-black text-white"><span id="hudCombo" class="text-amber-400">0</span>連 / <span id="hudScore">0</span></div>
+        </div>
+      </div>
+
+      <div class="flex-1 min-w-[140px] max-w-xs">
+        <div class="flex justify-between text-[11px] font-bold mb-0.5">
+          <span class="text-amber-300">TIME</span>
+          <span id="timerText" class="font-mono text-sm font-black text-white">10.0s</span>
+        </div>
+        <div class="w-full h-3 bg-zinc-800 rounded-full overflow-hidden border border-zinc-700">
+          <div id="timerBar" class="h-full bg-gradient-to-r from-red-600 via-amber-500 to-emerald-400 rounded-full transition-all duration-100" style="width: 100%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 道路標識ステージ -->
+    <div id="stageArena" class="relative min-h-[220px] sm:min-h-[280px] bg-gradient-to-b from-zinc-900/80 to-black/95 border-2 border-amber-500/40 rounded-2xl flex flex-col items-center justify-center p-4 overflow-hidden shadow-2xl">
+      <div class="absolute top-2.5 left-3 right-3 flex items-center justify-between text-xs">
+        <span id="signScriptBadge" class="px-2 py-0.5 rounded bg-zinc-800/90 border border-zinc-600 text-zinc-200 font-bold text-[11px]">
+          タイ文字
+        </span>
+        <button onclick="app.revealHint()" class="px-2.5 py-0.5 rounded bg-amber-950/90 border border-amber-500/60 text-amber-300 font-bold text-[11px]">
+          パーツ分解ヒント
+        </button>
+      </div>
+
+      <div class="my-5 flex flex-col items-center justify-center max-w-full">
+        <div id="roadSignBox" class="sign-thai-green px-6 py-4 sm:px-10 sm:py-6 rounded-xl text-center transition-all">
+          <div class="text-[10px] uppercase tracking-widest opacity-80 font-bold mb-1.5" id="signHeaderSub">THAILAND HIGHWAY</div>
+          <div id="signMainText" class="text-3xl sm:text-5xl md:text-6xl font-black tracking-wide break-all leading-tight py-1">
+            เชียงใหม่
+          </div>
+          <div id="signDistance" class="mt-2 text-xs font-mono opacity-85 border-t border-current/20 pt-1 flex items-center justify-between gap-4">
+            <span>↑ Hwy 11</span>
+            <span>55 กม.</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="charBreakdownBox" class="hidden w-full max-w-xl bg-zinc-950/95 border border-amber-500/40 rounded-lg p-2 text-center">
+        <div id="charBreakdownContent" class="flex flex-wrap items-center justify-center gap-1.5 text-xs font-mono"></div>
+      </div>
+
+      <div id="judgeStampOverlay" class="hidden absolute inset-0 bg-black/65 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 z-20">
+        <div id="judgeStampBadge" class="stamp-anim px-6 py-2.5 border-4 rounded-xl serif-heavy text-3xl sm:text-5xl font-black tracking-widest shadow-2xl">
+          撃破!!
+        </div>
+      </div>
+    </div>
+
+    <!-- スマホ用ワンタップ4択パネル -->
+    <div id="choicePanel" class="grid grid-cols-2 gap-2">
+      <!-- JSで4択ボタン生成 -->
+    </div>
+
+    <!-- 音声＆テキスト回答パネル -->
+    <div class="bg-zinc-900/95 border border-zinc-700 rounded-xl p-3 space-y-2.5 shadow-xl">
+      <div class="flex items-center gap-2">
+        <button id="btnMic" onclick="app.toggleMic()" class="flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-lg font-black text-xs border-2 border-red-500 bg-red-600/20 text-red-200 shrink-0">
+          <span id="micDot" class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
+          <span id="micStatusText">声で回答</span>
+        </button>
+        <div class="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-1.5">
+          <div id="voiceInterimText" class="text-xs sm:text-sm font-bold text-amber-300 truncate">
+            マイク発声 または 上のボタン・入力で回答
+          </div>
+        </div>
+      </div>
+
+      <form onsubmit="app.handleTextSubmit(event)" class="flex gap-1.5">
+        <input type="text" id="textAnswerInput" autocomplete="off" placeholder="直接入力して回答..." class="flex-1 bg-zinc-950 border border-zinc-700 focus:border-amber-500 rounded-lg px-3 py-2 text-white font-bold text-sm outline-none">
+        <button type="submit" class="px-4 py-2 rounded-lg bg-amber-600 text-black font-black text-xs shrink-0">
+          回答
+        </button>
+        <button type="button" onclick="app.giveUpQuestion()" class="px-3 py-2 rounded-lg bg-zinc-800 text-zinc-300 font-bold text-xs border border-zinc-600 shrink-0">
+          パス
+        </button>
+      </form>
+    </div>
+
+    <!-- 解説パネル -->
+    <div id="explanationPanel" class="hidden bg-zinc-900 border-2 border-amber-500/70 rounded-xl p-4 space-y-3 shadow-2xl">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-2.5">
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="expResultBadge" class="px-2 py-0.5 rounded text-xs font-black bg-emerald-600 text-white">CLEAR</span>
+            <span id="expCountryBadge" class="text-xs font-bold text-amber-300">タイ北部</span>
+          </div>
+          <div class="mt-1 flex items-baseline gap-2 flex-wrap">
+            <span id="expNativeTitle" class="text-2xl font-black text-white">เชียงใหม่</span>
+            <span class="text-lg font-black text-amber-400">＝ <span id="expReadingTitle">チェンマイ</span></span>
+          </div>
+        </div>
+
+        <button onclick="app.nextQuestion()" class="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-black font-black text-sm shadow-lg">
+          次の標識へ進む →
+        </button>
+      </div>
+
+      <div id="expCharCards" class="flex flex-wrap gap-1.5"></div>
+      <div class="bg-zinc-950/90 border border-zinc-800 rounded-lg p-3 text-xs sm:text-sm text-zinc-200 leading-relaxed" id="expGeoNote"></div>
+    </div>
+  </section>
+
+  <!-- リザルト画面 -->
+  <section id="screenResult" class="w-full hidden space-y-4">
+    <div class="bg-zinc-900/95 border-2 border-amber-500/60 rounded-2xl p-5 text-center space-y-4 shadow-2xl">
+      <h2 class="serif-heavy text-2xl sm:text-3xl font-black text-white" id="resRankTitle">師範代クラス</h2>
+      <div class="flex justify-center gap-6">
+        <div>
+          <div class="text-xs text-zinc-400">SCORE</div>
+          <div class="text-2xl font-black text-amber-400" id="resScore">0</div>
+        </div>
+        <div>
+          <div class="text-xs text-zinc-400">撃破数</div>
+          <div class="text-2xl font-black text-white" id="resCorrect">0 / 0</div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap justify-center gap-2">
+        <button onclick="app.retryWrongOnly()" id="btnRetryWrong" class="px-4 py-2.5 rounded-lg bg-red-600 text-white font-black text-xs">
+          間違えた都市だけ特訓
+        </button>
+        <button onclick="app.restartCurrentPack()" class="px-4 py-2.5 rounded-lg bg-amber-500 text-black font-black text-xs">
+          もう一度走る
+        </button>
+        <button onclick="app.showHome()" class="px-4 py-2.5 rounded-lg bg-zinc-800 text-zinc-200 font-bold text-xs border border-zinc-600">
+          コース選択へ
+        </button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- 解読チャートモーダル -->
+<div id="modalCheatSheet" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm hidden flex items-center justify-center p-3">
+  <div class="bg-zinc-900 border-2 border-emerald-500/60 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-4 space-y-3 shadow-2xl text-xs">
+    <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+      <h3 class="text-base font-black text-emerald-300">タイ文字・6大頻出パーツ早見表</h3>
+      <button onclick="app.toggleCheatSheet()" class="px-3 py-1 rounded bg-zinc-800 text-zinc-200 font-bold">閉じる</button>
+    </div>
+    <div class="space-y-2 font-mono text-zinc-200">
+      <div class="p-2.5 bg-zinc-950 rounded-lg border border-zinc-800"><strong class="text-amber-300">จังหวัด (チャンワット / 略称 จ.)</strong> ＝ 「〜県」（この直後が県名！）</div>
+      <div class="p-2.5 bg-zinc-950 rounded-lg border border-zinc-800"><strong class="text-amber-300">นคร (ナコーン)</strong> ＝ 都市（ナコーンサワン、ナコーンラーチャシーマー等）</div>
+      <div class="p-2.5 bg-zinc-950 rounded-lg border border-zinc-800"><strong class="text-amber-300">บุรี (ブリー)</strong> ＝ 街（チョンブリー、サラブリー、カンチャナブリー等）</div>
+      <div class="p-2.5 bg-zinc-950 rounded-lg border border-zinc-800"><strong class="text-amber-300">ธานี (ターニー)</strong> ＝ 都市（ウドーンターニー、ウボンラーチャターニー、スラートターニー）</div>
+      <div class="p-2.5 bg-zinc-950 rounded-lg border border-zinc-800"><strong class="text-amber-300">เชียง (チェン)</strong> ＝ 北部の都市（チェンマイ、チェンラーイ）</div>
+      <div class="p-2.5 bg-zinc-950 rounded-lg border border-zinc-800"><strong class="text-amber-300">国道1桁目：</strong> 1=北部、2=北東(イサーン)、3=中部・東、4=南部</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const GEO_PACKS = [
+  {
+    id: 'thai_master',
+    title: '【特設】タイ文字・主要15都市＆キロポスト完全制覇',
+    subtitle: '北部・イサーン・中部・南部の重要拠点！「ナコーン」「ブリー」等のパーツ分解つき',
+    badge: 'イチオシ・全15都市',
+    questions: [
+      {
+        native: 'กรุงเทพมหานคร',
+        reading: 'バンコク（クルンテープ）',
+        country: 'タイ中部（首都）',
+        script: 'タイ文字（首都）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.1  85 กม.',
+        accepted: ['ばんこく', 'バンコク', 'くるんてーぷ', 'クルンテープ', 'bangkok'],
+        breakdown: [['กรุง', 'Krung(都)'], ['เทพ', 'Thep(天使)'], ['มหา', 'Maha(大)'], ['นคร', 'Nakhon(都市)']],
+        note: 'タイの標識ではBangkokは「กรุงเทพฯ」または「กรุงเทพมหานคร（クルンテープ・マハーナコーン）」と書かれます！'
+      },
+      {
+        native: 'เชียงใหม่',
+        reading: 'チェンマイ',
+        country: 'タイ北部（国道11号終点）',
+        script: 'タイ文字（北部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.11  55 กม.',
+        accepted: ['ちぇんまい', 'チェンマイ', 'chiang mai', 'chiangmai'],
+        breakdown: [['เชียง', 'Chiang(チェン)'], ['ใหม่', 'Mai(マイ＝新しい)']],
+        note: '北部最大の都市！「เชียง（チェン）」はチェンマイとチェンラーイの2大北部都市の目印です。'
+      },
+      {
+        native: 'เชียงราย',
+        reading: 'チェンラーイ',
+        country: 'タイ最北部（国道1号北端）',
+        script: 'タイ文字（北部）',
+        signStyle: 'sign-thai-kmpost',
+        distance: '↑ ทล.1  62 กม.',
+        accepted: ['ちぇんらーい', 'ちぇんらい', 'チェンラーイ', 'チェンライ', 'chiang rai'],
+        breakdown: [['เชียง', 'Chiang(チェン)'], ['ราย', 'Rai(ラーイ)']],
+        note: 'チェンマイと前半「เชียง」が同じで、後半が「ราย（ร=R + า=A + ย=Y）」なら最北部のチェンラーイです！'
+      },
+      {
+        native: 'นครสวรรค์',
+        reading: 'ナコーンサワン',
+        country: 'タイ中北部（国道1号の要衝）',
+        script: 'タイ文字（中北部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.1  110 กม.',
+        accepted: ['なこーんさわん', 'なこんさわん', 'ナコーンサワン', 'ナコンサワン', 'nakhon sawan'],
+        breakdown: [['นคร', 'Nakhon(都市)'], ['สวรรค์', 'Sawan(サワン＝天国)']],
+        note: 'バンコクから北へ向かう国道1号線で必ず出る分岐拠点。先頭の「นคร（ナコーン）」が目印！'
+      },
+      {
+        native: 'พิษณุโลก',
+        reading: 'ピッサヌローク',
+        country: 'タイ中北部（国道11号・12号交点）',
+        script: 'タイ文字（中北部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.117  128 กม.',
+        accepted: ['ぴっさぬろーく', 'ぴさぬろーく', 'ピッサヌローク', 'ピサヌローク', 'phitsanulok'],
+        breakdown: [['พิษณุ', 'Phitsanu(ピッサヌ)'], ['โลก', 'Lok(ローク)']],
+        note: '後半の「โลก（ローク）」にある背の高い母音記号「โ(o)」が視覚的なフックになります。'
+      },
+      {
+        native: 'สุโขทัย',
+        reading: 'スコータイ',
+        country: 'タイ中北部（古都）',
+        script: 'タイ文字（中北部）',
+        signStyle: 'sign-thai-kmpost',
+        distance: '↑ ทล.12  48 กม.',
+        accepted: ['すこーたい', 'すこたい', 'スコータイ', 'スコタイ', 'sukhothai'],
+        breakdown: [['สุ', 'Su(ス)'], ['โข', 'kho(コー)'], ['ทัย', 'thai(タイ)']],
+        note: '世界遺産の古都スコータイ。「สุ(ス)」＋背の高い「โ(オ)」＋「ทัย(タイ)」でリズムよく読めます。'
+      },
+      {
+        native: 'นครราชสีมา',
+        reading: 'ナコーンラーチャシーマー（コラート）',
+        country: 'タイ北東部・イサーン玄関口',
+        script: 'タイ文字（北東部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.2  145 กม.',
+        accepted: ['なこーんらーちゃしーまー', 'ナコーンラーチャシーマー', 'ナコンラチャシマ', 'こらーと', 'コラート', 'korat'],
+        breakdown: [['นคร', 'Nakhon(都市)'], ['ราช', 'Ratcha(王)'], ['สีมา', 'Sima(シーマー)']],
+        note: 'イサーン最大の拠点（通称コラート）。国道2号線の主役です！'
+      },
+      {
+        native: 'ขอนแก่น',
+        reading: 'コーンケン',
+        country: 'タイ北東部・イサーン中央',
+        script: 'タイ文字（北東部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.2  95 กม.',
+        accepted: ['こーんけん', 'こんけん', 'コーンケン', 'コンケン', 'khon kaen'],
+        breakdown: [['ขอน', 'Khon(コーン)'], ['แก่น', 'Kaen(ケン)']],
+        note: '真ん中に2本並んだ母音記号「แ(ae)」があるのがコーンケンの大きな目印です！'
+      },
+      {
+        native: 'อุดรธานี',
+        reading: 'ウドーンターニー',
+        country: 'タイ北東部・イサーン北部',
+        script: 'タイ文字（北東部）',
+        signStyle: 'sign-thai-kmpost',
+        distance: '↑ ทล.2  115 กม.',
+        accepted: ['うどーんたーにー', 'うどんたに', 'ウドーンターニー', 'ウドンタニ', 'udon thani'],
+        breakdown: [['อุ', 'U(ウ)'], ['ดร', 'don(ドーン)'], ['ธานี', 'Thani(ターニー)']],
+        note: '頭が「อุ(ウ)」でお尻が「ธานี(ターニー)」の短い方！イサーン北部の中心です。'
+      },
+      {
+        native: 'อุบลราชธานี',
+        reading: 'ウボンラーチャターニー',
+        country: 'タイ北東部・イサーン南東端',
+        script: 'タイ文字（北東部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.24  160 กม.',
+        accepted: ['うぼんらーちゃたーにー', 'うぼんらちゃたに', 'ウボンラーチャターニー', 'ウボンラチャタニ', 'ウボン', 'ubon'],
+        breakdown: [['อุบล', 'Ubon(ウボン)'], ['ราช', 'Ratcha(ラーチャ)'], ['ธานี', 'Thani(ターニー)']],
+        note: 'ウドーンターニーより長く、真ん中に「ราช（ラーチャ）」が入れば南東端のウボンラーチャターニーです！'
+      },
+      {
+        native: 'ชลบุรี',
+        reading: 'チョンブリー',
+        country: 'タイ東部（国道3号・パタヤ方面）',
+        script: 'タイ文字（東部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.3  45 กม.',
+        accepted: ['ちょんぶりー', 'ちょんぶり', 'チョンブリー', 'チョンブリ', 'chon buri', 'chonburi'],
+        breakdown: [['ชล', 'Chon(チョン)'], ['บุรี', 'Buri(ブリー＝街)']],
+        note: '音節末の「ล(L)」は「ン(n)」の音になるため、チョルではなく「チョンブリー」と読みます！'
+      },
+      {
+        native: 'กาญจนบุรี',
+        reading: 'カンチャナブリー',
+        country: 'タイ中部西端（ミャンマー国境方面）',
+        script: 'タイ文字（中部西端）',
+        signStyle: 'sign-thai-kmpost',
+        distance: '↑ ทล.323  68 กม.',
+        accepted: ['かんちゃなぶりー', 'かんちゃなぶり', 'カンチャナブリー', 'カンチャナブリ', 'kanchanaburi'],
+        breakdown: [['กาญจน', 'Kanchana(カンチャナ)'], ['บุรี', 'Buri(ブリー)']],
+        note: '先頭の「กา(カー/カン)」と末尾の「บุรี(ブリー)」のセットで即特定できます。'
+      },
+      {
+        native: 'สุราษฎร์ธานี',
+        reading: 'スラートターニー',
+        country: 'タイ南部（マレー半島中部）',
+        script: 'タイ文字（南部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.41  130 กม.',
+        accepted: ['すらーとたーにー', 'すらとたに', 'スラートターニー', 'スラタニ', 'surat thani'],
+        breakdown: [['สุ', 'Su(ス)'], ['ราษฎร์', 'rat(ラート)'], ['ธานี', 'Thani(ターニー)']],
+        note: '南部（国道4番台）の最重要ハブ都市！「สุ(ス)」で始まり「ธานี(ターニー)」で終わります。'
+      },
+      {
+        native: 'ภูเก็ต',
+        reading: 'プーケット',
+        country: 'タイ南部（アンダマン海側）',
+        script: 'タイ文字（南部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.402  25 กม.',
+        accepted: ['ぷーけっと', 'プーケット', 'phuket'],
+        breakdown: [['ภู', 'Phu(プー)'], ['เก็ต', 'ket(ケット)']],
+        note: '先頭の「ภู(Phu)」と上の小さな8の字記号「็」が目印です。'
+      },
+      {
+        native: 'หาดใหญ่',
+        reading: 'ハートヤイ（ハジャイ）',
+        country: 'タイ深南部・ソンクラー県',
+        script: 'タイ文字（深南部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.4  35 กม.',
+        accepted: ['はーとやい', 'はじゃい', 'ハートヤイ', 'ハジャイ', 'hat yai'],
+        breakdown: [['หาด', 'Hat(ハート＝浜)'], ['ใหญ่', 'Yai(ヤイ＝大きい)']],
+        note: 'マレーシア国境に近い深南部最大の都市。「ハートヤイ」「ハジャイ」どちらでも正解です！'
+      }
+    ]
+  },
+  {
+    id: 'world_mix',
+    title: 'キリル・ギリシャ・東欧・ハングル厳選コース',
+    subtitle: 'モスクワ・ウラジオストク・テッサロニキ・ウッチ・プサン等の頻出都市',
+    badge: '世界文字（8都市）',
+    questions: [
+      {
+        native: 'Владивосток',
+        reading: 'ウラジオストク',
+        country: 'ロシア極東・沿海地方',
+        script: 'キリル文字',
+        signStyle: 'sign-russian-blue',
+        distance: '↑ А-370  280 km',
+        accepted: ['うらじおすとく', 'ウラジオストク', 'うらじおすとっく', 'vladivostok'],
+        breakdown: [['Вл', 'Vl'], ['ади', 'adi'], ['восток', 'vostok(東)']],
+        note: '「восток(Vostok＝東)」で終わる構造を知っておくと一瞬で読めます。'
+      },
+      {
+        native: 'Новосибирск',
+        reading: 'ノヴォシビルスク',
+        country: 'ロシア・シベリア連邦管区',
+        script: 'キリル文字',
+        signStyle: 'sign-russian-blue',
+        distance: '↑ Р-254  310 km',
+        accepted: ['のぼしびるすく', 'のゔぉしびるすく', 'ノヴォシビルスク', 'ノボシビルスク', 'novosibirsk'],
+        breakdown: [['Ново', 'Novo(新)'], ['сибир', 'sibir(シベリア)'], ['ск', 'sk(街)']],
+        note: '「新しい＋シベリア＋街」に分解すると超簡単に読めます！'
+      },
+      {
+        native: 'Екатеринбург',
+        reading: 'エカテリンブルク',
+        country: 'ロシア・ウラル連邦管区',
+        script: 'キリル文字',
+        signStyle: 'sign-russian-blue',
+        distance: '↑ Р-242  85 km',
+        accepted: ['えかてりんぶるく', 'エカテリンブルク', 'ekaterinburg'],
+        breakdown: [['Ека', 'Yeka'], ['терин', 'terin'], ['бург', 'burg(街)']],
+        note: 'ウラル山脈の拠点都市。語末の「бург(ブルク)」は街を意味します。'
+      },
+      {
+        native: 'Θεσσαλονίκη',
+        reading: 'テッサロニキ',
+        country: 'ギリシャ北部（第2の都市）',
+        script: 'ギリシャ文字',
+        signStyle: 'sign-greek-blue',
+        distance: '↑ A1  75 km',
+        accepted: ['てっさろにき', 'テッサロニキ', 'thessaloniki'],
+        breakdown: [['Θε', 'The'], ['σσα', 'ssa'], ['λο', 'lo'], ['νίκη', 'niki']],
+        note: '先頭の「Θ(Th)」と「σ(S)」「ν(N)」が読めればギリシャ標識は攻略できます。'
+      },
+      {
+        native: 'Łódź',
+        reading: 'ウッチ',
+        country: 'ポーランド中央部',
+        script: 'ポーランド文字',
+        signStyle: 'sign-euro-green',
+        distance: '↑ A1 / A2  50 km',
+        accepted: ['うっち', 'ウッチ', 'lodz'],
+        breakdown: [['Ł', 'w(ウ)'], ['ó', 'u(ウ)'], ['dź', 'ch(ッチ)']],
+        note: 'ポーランド語の「Ł」はW（ウ）、「ó」はU（ウ）の音になるためウッチと読みます。'
+      },
+      {
+        native: 'Wrocław',
+        reading: 'ヴロツワフ',
+        country: 'ポーランド南西部',
+        script: 'ポーランド文字',
+        signStyle: 'sign-euro-green',
+        distance: '↑ A4  95 km',
+        accepted: ['ゔろつわふ', 'ぶろつわふ', 'ヴロツワフ', 'ブロツワフ', 'wroclaw'],
+        breakdown: [['Wr', 'Vr(ヴロ)'], ['oc', 'ots(ツ)'], ['ław', 'waf(ワフ)']],
+        note: '「W＝V」「c＝ツ(ts)」「ł＝W(ワ)」のポーランド3大ルールが詰まっています。'
+      },
+      {
+        native: '부산',
+        reading: 'プサン',
+        country: '韓国南東部（釜山）',
+        script: 'ハングル',
+        signStyle: 'sign-korea-green',
+        distance: '↑ 1  80 km',
+        accepted: ['ぷさん', 'プサン', '釜山', 'busan'],
+        breakdown: [['부', 'ㅂ(b/p)+ㅜ(u)=プ'], ['산', 'ㅅ(s)+ㅏ(a)+ㄴ(n)=サン']],
+        note: '2文字目の「산」は「山（サン）」を表す超頻出パーツです。'
+      },
+      {
+        native: '대전',
+        reading: 'テジョン',
+        country: '韓国中央部（大田）',
+        script: 'ハングル',
+        signStyle: 'sign-korea-green',
+        distance: '↑ 1  45 km',
+        accepted: ['てじょん', 'テジョン', '大田', 'daejeon'],
+        breakdown: [['대', 'ㄷ(d/t)+ㅐ(ae)=テ'], ['전', 'ㅈ(j)+ㅓ(eo)+ㄴ(n)=ジョン']],
+        note: '「대(大＝テ)」は「대구（大邱＝テグ）」とも1文字目が共通しています。'
+      }
+    ]
+  }
+];
+
+class SoundEngine {
+  constructor() { this.ctx = null; this.enabled = true; }
+  init() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AudioCtx();
+    }
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+  }
+  playSpawn() {
+    if (!this.enabled) return;
+    this.init();
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.exponentialRampToValueAtTime(42, now + 0.3);
+    gain.gain.setValueAtTime(0.35, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.32);
+    osc.connect(gain); gain.connect(this.ctx.destination);
+    osc.start(now); osc.stop(now + 0.34);
+  }
+  playSlashClear() {
+    if (!this.enabled) return;
+    this.init();
+    const now = this.ctx.currentTime;
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+      gain.gain.setValueAtTime(0.22, now + idx * 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.008, now + idx * 0.05 + 0.4);
+      osc.connect(gain); gain.connect(this.ctx.destination);
+      osc.start(now + idx * 0.05); osc.stop(now + idx * 0.05 + 0.42);
+    });
+  }
+  playMiss() {
+    if (!this.enabled) return;
+    this.init();
+    const now = this.ctx.currentTime;
+    [160, 115].forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.14);
+      gain.gain.setValueAtTime(0.2, now + idx * 0.14);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.14 + 0.3);
+      osc.connect(gain); gain.connect(this.ctx.destination);
+      osc.start(now + idx * 0.14); osc.stop(now + idx * 0.14 + 0.32);
+    });
+  }
+}
+
+class GeoGoApp {
+  constructor() {
+    this.sfx = new SoundEngine();
+    this.timeLimit = 10;
+    this.choiceAssist = true;
+    this.currentPack = null;
+    this.questions = [];
+    this.qIndex = 0;
+    this.score = 0;
+    this.combo = 0;
+    this.lives = 5;
+    this.maxLives = 5;
+    this.remainingTime = 10;
+    this.isAnswering = false;
+    this.timerId = null;
+    this.history = [];
+    this.recognition = null;
+    this.micActive = false;
+    this.initSpeechRecognition();
+    this.renderPackGrid();
+  }
+
+  normalizeGeoText(str) {
+    if (!str) return '';
+    let s = str.trim().toLowerCase();
+    s = s.replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+    s = s.replace(/^(答えは|こたえは|えーっと|えっと|たぶん)/g, '');
+    s = s.replace(/(です|ます|だ|かな|でしょう)$/g, '');
+    s = s.replace(/[\u30a1-\u30f6]/g, m => String.fromCharCode(m.charCodeAt(0) - 0x60));
+    s = s.replace(/[\s・ー\-_、。！？!?.,'（）()]/g, '');
+    s = s.replace(/ゔ/g, 'ぶ');
+    return s;
+  }
+
+  checkAnswerMatch(userInput, question) {
+    const normUser = this.normalizeGeoText(userInput);
+    if (!normUser || normUser.length < 2) return false;
+    for (const candidate of question.accepted) {
+      const normCand = this.normalizeGeoText(candidate);
+      if (normUser === normCand) return true;
+      if (normCand.length >= 3 && normUser.includes(normCand)) return true;
+      if (normUser.replace(/っ/g, '') === normCand.replace(/っ/g, '')) return true;
+    }
+    return false;
+  }
+
+  initSpeechRecognition() {
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) return;
+    this.recognition = new SpeechRec();
+    this.recognition.lang = 'ja-JP';
+    this.recognition.continuous = true;
+    this.recognition.interimResults = true;
+    this.recognition.onstart = () => { this.micActive = true; this.updateMicUI(); };
+    this.recognition.onend = () => {
+      this.micActive = false;
+      this.updateMicUI();
+      if (this.isAnswering) { try { this.recognition.start(); } catch (e) {} }
+    };
+    this.recognition.onresult = (event) => {
+      if (!this.isAnswering) return;
+      let spoken = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        spoken += event.results[i][0].transcript;
+      }
+      spoken = spoken.trim();
+      if (spoken) {
+        document.getElementById('voiceInterimText').textContent = `認識中: 「${spoken}」`;
+        if (this.remainingTime < 2.4) this.remainingTime = 2.4;
+        const currentQ = this.questions[this.qIndex];
+        if (this.checkAnswerMatch(spoken, currentQ)) {
+          this.completeQuestion(true, spoken);
+        }
+      }
+    };
+  }
+
+  updateMicUI() {
+    const txt = document.getElementById('micStatusText');
+    txt.textContent = this.micActive ? 'マイクON' : '声で回答';
+  }
+
+  toggleMic() {
+    if (!this.recognition) {
+      alert('お使いのブラウザは音声認識に未対応です。4択ボタンまたはテキスト入力をご利用ください。');
+      return;
+    }
+    if (this.micActive) {
+      this.isAnswering = false;
+      this.recognition.stop();
+    } else {
+      try { this.recognition.start(); } catch (e) {}
+    }
+  }
+
+  renderPackGrid() {
+    const grid = document.getElementById('packGrid');
+    grid.innerHTML = GEO_PACKS.map((pack, idx) => `
+      <div class="bg-zinc-900/95 border-2 ${idx === 0 ? 'border-emerald-500/80' : 'border-zinc-800'} rounded-xl p-4 flex flex-col justify-between gap-3 shadow-lg">
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span class="px-2 py-0.5 rounded text-[11px] font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">${pack.badge}</span>
+            <span class="text-xs font-mono text-zinc-400">全${pack.questions.length}問</span>
+          </div>
+          <h3 class="serif-heavy text-lg font-black text-white">${pack.title}</h3>
+          <p class="text-xs text-zinc-400">${pack.subtitle}</p>
+        </div>
+        <button onclick="app.startPack('${pack.id}')" class="w-full py-3 rounded-lg bg-gradient-to-r from-emerald-600 to-amber-600 text-white font-black text-sm shadow-md">
+          この道場へ出陣する →
+        </button>
+      </div>
+    `).join('');
+  }
+
+  setTimeLimit(sec) {
+    this.timeLimit = sec;
+    [6, 10, 15].forEach(t => {
+      document.getElementById('time' + t).className = (t === sec)
+        ? 'py-2 rounded font-bold text-xs border border-amber-500 bg-amber-600/30 text-white'
+        : 'py-2 rounded font-bold text-xs border border-zinc-700 bg-zinc-800 text-zinc-400';
+    });
+  }
+
+  setChoiceAssist(flag) {
+    this.choiceAssist = flag;
+    document.getElementById('choiceOn').className = flag
+      ? 'py-2 px-3 rounded font-bold text-xs border border-amber-500 bg-amber-600/30 text-white'
+      : 'py-2 px-3 rounded font-bold text-xs border border-zinc-700 bg-zinc-800 text-zinc-400';
+    document.getElementById('choiceOff').className = !flag
+      ? 'py-2 px-3 rounded font-bold text-xs border border-amber-500 bg-amber-600/30 text-white'
+      : 'py-2 px-3 rounded font-bold text-xs border border-zinc-700 bg-zinc-800 text-zinc-400';
+  }
+
+  toggleSound() {
+    this.sfx.enabled = !this.sfx.enabled;
+    document.getElementById('btnSound').textContent = `音: ${this.sfx.enabled ? 'ON' : 'OFF'}`;
+  }
+
+  toggleCheatSheet() {
+    document.getElementById('modalCheatSheet').classList.toggle('hidden');
+  }
+
+  startPack(packId, customQuestions = null) {
+    this.sfx.init();
+    if (customQuestions) {
+      this.questions = [...customQuestions];
+    } else {
+      const found = GEO_PACKS.find(p => p.id === packId);
+      this.currentPack = packId;
+      this.questions = [...found.questions].sort(() => Math.random() - 0.5);
+    }
+    this.qIndex = 0;
+    this.score = 0;
+    this.combo = 0;
+    this.lives = this.maxLives;
+    this.history = [];
+    document.getElementById('screenHome').classList.add('hidden');
+    document.getElementById('screenResult').classList.add('hidden');
+    document.getElementById('screenBattle').classList.remove('hidden');
+    this.loadQuestion();
+  }
+
+  loadQuestion() {
+    const q = this.questions[this.qIndex];
+    this.isAnswering = true;
+    this.remainingTime = this.timeLimit;
+    if (this.timerId) clearInterval(this.timerId);
+
+    document.getElementById('explanationPanel').classList.add('hidden');
+    document.getElementById('judgeStampOverlay').classList.add('hidden');
+    document.getElementById('crisisOverlay').classList.add('hidden');
+    document.getElementById('charBreakdownBox').classList.add('hidden');
+    document.getElementById('textAnswerInput').value = '';
+
+    document.getElementById('hudProgress').textContent = `${this.qIndex + 1} / ${this.questions.length}`;
+    document.getElementById('hudCombo').textContent = this.combo;
+    document.getElementById('hudScore').textContent = this.score;
+    document.getElementById('hudLives').innerHTML = '♥'.repeat(this.lives);
+
+    document.getElementById('signScriptBadge').textContent = q.script;
+    document.getElementById('signMainText').textContent = q.native;
+    document.getElementById('signDistance').innerHTML = `<span>${q.distance}</span><span>GEO-SIGN</span>`;
+    document.getElementById('roadSignBox').className = `${q.signStyle || 'sign-thai-green'} px-6 py-4 sm:px-10 sm:py-6 rounded-xl text-center transition-all pressure-sign`;
+
+    document.getElementById('charBreakdownContent').innerHTML = q.breakdown.map(([ch, sound]) => `
+      <span class="px-2 py-0.5 rounded bg-zinc-900 border border-zinc-700 text-zinc-200">
+        <strong class="text-amber-300">${ch}</strong>=${sound}
+      </span>
+    `).join('');
+
+    this.renderChoices(q);
+    this.sfx.playSpawn();
+
+    this.timerId = setInterval(() => {
+      if (!this.isAnswering) return;
+      this.remainingTime = Math.max(0, +(this.remainingTime - 0.1).toFixed(1));
+      document.getElementById('timerText').textContent = `${this.remainingTime.toFixed(1)}s`;
+      document.getElementById('timerBar').style.width = `${(this.remainingTime / this.timeLimit) * 100}%`;
+      if (this.remainingTime <= 2.8 && this.remainingTime > 0) {
+        document.getElementById('crisisOverlay').classList.remove('hidden');
+      }
+      if (this.remainingTime <= 0) {
+        this.completeQuestion(false, 'TIME UP');
+      }
+    }, 100);
+  }
+
+  renderChoices(currentQ) {
+    const panel = document.getElementById('choicePanel');
+    if (!this.choiceAssist) {
+      panel.classList.add('hidden');
+      return;
+    }
+    panel.classList.remove('hidden');
+    const pool = GEO_PACKS.flatMap(p => p.questions).filter(item => item.native !== currentQ.native);
+    const distractors = pool.sort(() => Math.random() - 0.5).slice(0, 3);
+    const options = [currentQ, ...distractors].sort(() => Math.random() - 0.5);
+
+    panel.innerHTML = options.map(opt => `
+      <button onclick="app.handleChoiceClick('${opt.accepted[0]}')" class="py-3 px-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 active:bg-amber-600 active:text-black border border-zinc-700 text-white font-black text-xs sm:text-sm shadow transition text-center">
+        ${opt.reading}
+      </button>
+    `).join('');
+  }
+
+  handleChoiceClick(ans) {
+    if (!this.isAnswering) return;
+    const currentQ = this.questions[this.qIndex];
+    if (this.checkAnswerMatch(ans, currentQ)) {
+      this.completeQuestion(true, ans);
+    } else {
+      this.sfx.playMiss();
+      const arena = document.getElementById('stageArena');
+      arena.classList.remove('shake-effect');
+      void arena.offsetWidth;
+      arena.classList.add('shake-effect');
+    }
+  }
+
+  revealHint() {
+    document.getElementById('charBreakdownBox').classList.remove('hidden');
+  }
+
+  handleTextSubmit(e) {
+    e.preventDefault();
+    if (!this.isAnswering) { this.nextQuestion(); return; }
+    const input = document.getElementById('textAnswerInput');
+    const val = input.value.trim();
+    if (!val) return;
+    if (this.checkAnswerMatch(val, this.questions[this.qIndex])) {
+      this.completeQuestion(true, val);
+    } else {
+      this.sfx.playMiss();
+      input.select();
+    }
+  }
+
+  giveUpQuestion() {
+    if (!this.isAnswering) return;
+    this.completeQuestion(false, 'PASS');
+  }
+
+  completeQuestion(isCorrect, userAnswer) {
+    if (!this.isAnswering) return;
+    this.isAnswering = false;
+    if (this.timerId) clearInterval(this.timerId);
+    document.getElementById('crisisOverlay').classList.add('hidden');
+    document.getElementById('choicePanel').classList.add('hidden');
+
+    const q = this.questions[this.qIndex];
+    const stampOverlay = document.getElementById('judgeStampOverlay');
+    const stampBadge = document.getElementById('judgeStampBadge');
+    stampOverlay.classList.remove('hidden');
+
+    if (isCorrect) {
+      this.sfx.playSlashClear();
+      this.combo++;
+      const gained = 100 + Math.round((this.remainingTime / this.timeLimit) * 50);
+      this.score += gained;
+      stampBadge.textContent = `撃破!! +${gained}`;
+      stampBadge.className = 'stamp-anim px-6 py-2.5 border-4 border-amber-300 bg-gradient-to-b from-red-600 to-amber-600 text-white rounded-xl serif-heavy text-3xl sm:text-5xl font-black';
+    } else {
+      this.sfx.playMiss();
+      this.combo = 0;
+      this.lives = Math.max(0, this.lives - 1);
+      stampBadge.textContent = '見失った...';
+      stampBadge.className = 'stamp-anim px-6 py-2.5 border-4 border-zinc-500 bg-zinc-900 text-red-400 rounded-xl serif-heavy text-2xl sm:text-4xl font-black';
+    }
+
+    this.history.push({ question: q, isCorrect });
+    setTimeout(() => {
+      stampOverlay.classList.add('hidden');
+      this.showExplanation(q, isCorrect);
+    }, 750);
+  }
+
+  showExplanation(q, isCorrect) {
+    const panel = document.getElementById('explanationPanel');
+    panel.classList.remove('hidden');
+    document.getElementById('expResultBadge').textContent = isCorrect ? 'CLEAR!!' : 'MISS';
+    document.getElementById('expCountryBadge').textContent = `${q.country}`;
+    document.getElementById('expNativeTitle').textContent = q.native;
+    document.getElementById('expReadingTitle').textContent = q.reading;
+    document.getElementById('expGeoNote').textContent = q.note;
+    document.getElementById('expCharCards').innerHTML = q.breakdown.map(([ch, sound]) => `
+      <div class="bg-zinc-950 border border-amber-500/40 rounded-lg px-2.5 py-1.5 text-center">
+        <div class="text-lg font-black text-white">${ch}</div>
+        <div class="text-[11px] font-mono text-amber-400">${sound}</div>
+      </div>
+    `).join('');
+  }
+
+  nextQuestion() {
+    if (this.qIndex + 1 < this.questions.length && this.lives > 0) {
+      this.qIndex++;
+      this.loadQuestion();
+    } else {
+      this.showResult();
+    }
+  }
+
+  showResult() {
+    if (this.timerId) clearInterval(this.timerId);
+    document.getElementById('screenBattle').classList.add('hidden');
+    document.getElementById('screenResult').classList.remove('hidden');
+    const correctCount = this.history.filter(h => h.isCorrect).length;
+    document.getElementById('resScore').textContent = this.score;
+    document.getElementById('resCorrect').textContent = `${correctCount} / ${this.history.length}`;
+  }
+
+  retryWrongOnly() {
+    const wrongs = this.history.filter(h => !h.isCorrect).map(h => h.question);
+    if (wrongs.length > 0) this.startPack(this.currentPack, wrongs);
+  }
+
+  restartCurrentPack() { this.startPack(this.currentPack); }
+
+  showHome() {
+    this.isAnswering = false;
+    if (this.timerId) clearInterval(this.timerId);
+    document.getElementById('screenBattle').classList.add('hidden');
+    document.getElementById('screenResult').classList.add('hidden');
+    document.getElementById('screenHome').classList.remove('hidden');
+  }
+}
+
+const app = new GeoGoApp();
+</script>
+</body>
+</html>

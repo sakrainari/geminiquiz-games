@@ -1,0 +1,2295 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Answer Quiz - 音声回答型クイズアプリ</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Inter"', '"Noto Sans JP"', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-short': 'bounce 0.5s ease-in-out 2',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        /* Custom Audio Waveform Animation */
+        .wave-bar {
+            width: 5px;
+            border-radius: 9999px;
+            transition: height 0.15s ease;
+        }
+        .listening .wave-bar:nth-child(1) { animation: wave 0.7s infinite ease-in-out 0.1s; }
+        .listening .wave-bar:nth-child(2) { animation: wave 0.7s infinite ease-in-out 0.25s; }
+        .listening .wave-bar:nth-child(3) { animation: wave 0.7s infinite ease-in-out 0.4s; }
+        .listening .wave-bar:nth-child(4) { animation: wave 0.7s infinite ease-in-out 0.15s; }
+        .listening .wave-bar:nth-child(5) { animation: wave 0.7s infinite ease-in-out 0.35s; }
+        .listening .wave-bar:nth-child(6) { animation: wave 0.7s infinite ease-in-out 0.2s; }
+        .listening .wave-bar:nth-child(7) { animation: wave 0.7s infinite ease-in-out 0.05s; }
+
+        @keyframes wave {
+            0%, 100% { height: 8px; opacity: 0.5; }
+            50% { height: 32px; opacity: 1; }
+        }
+
+        /* Mic pulse ring */
+        .mic-ring {
+            position: absolute;
+            inset: -8px;
+            border-radius: 9999px;
+            border: 3px solid rgba(239, 68, 68, 0.6);
+            animation: ping-ring 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
+        @keyframes ping-ring {
+            0% { transform: scale(0.95); opacity: 0.9; }
+            80%, 100% { transform: scale(1.45); opacity: 0; }
+        }
+
+        /* 3D Tactile Buzzer Button */
+        .buzzer-btn {
+            background: radial-gradient(circle at 35% 30%, #ff6b6b, #ef4444 45%, #b91c1c 85%, #7f1d1d 100%);
+            box-shadow:
+                0 10px 0 #7f1d1d,
+                0 15px 25px rgba(239, 68, 68, 0.45),
+                inset 0 4px 10px rgba(255, 255, 255, 0.65);
+            transition: transform 0.06s ease, box-shadow 0.06s ease;
+        }
+        .buzzer-btn:hover {
+            filter: brightness(1.06);
+        }
+        .buzzer-btn:active, .buzzer-btn.pressed {
+            transform: translateY(7px);
+            box-shadow:
+                0 3px 0 #7f1d1d,
+                0 6px 12px rgba(239, 68, 68, 0.4),
+                inset 0 2px 6px rgba(255, 255, 255, 0.5);
+        }
+
+        /* Typewriter Caret */
+        .typewriter-caret {
+            display: inline-block;
+            width: 3px;
+            height: 1.15em;
+            background-color: #6366f1;
+            vertical-align: text-bottom;
+            margin-left: 2px;
+            animation: caret-blink 0.8s infinite;
+        }
+        @keyframes caret-blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.4); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(156, 163, 175, 0.7); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+    <!-- Top Header -->
+    <header class="sticky top-0 z-30 backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+            <!-- Brand Logo -->
+            <button onclick="app.showHomeConfirm()" class="flex items-center gap-2.5 text-left group focus:outline-none">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20 group-hover:scale-105 transition-transform">
+                    <i data-lucide="mic" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-extrabold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
+                            Voice Answer Quiz
+                        </h1>
+                        <span class="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-900/60 dark:text-rose-300 border border-rose-200 dark:border-rose-700/50">
+                            早押し対応
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">早押しボタン＆声で答えるAIクイズ</p>
+                </div>
+            </button>
+
+            <!-- Global Controls (TTS, SFX, AutoMic, Theme) -->
+            <div class="flex items-center gap-2">
+                <!-- TTS Toggle -->
+                <button id="btn-tts" onclick="app.toggleTTS()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800" title="問題と解説の音声読み上げ">
+                    <i data-lucide="message-square-Code" id="icon-tts" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">読み上げ</span>
+                    <span id="badge-tts" class="px-1.5 py-0.5 text-[10px] rounded bg-indigo-600 text-white">ON</span>
+                </button>
+
+                <!-- SFX Toggle -->
+                <button id="btn-sfx" onclick="app.toggleSFX()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800" title="効果音（ピンポン・ブブー）">
+                    <i data-lucide="volume-2" id="icon-sfx" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">効果音</span>
+                    <span id="badge-sfx" class="px-1.5 py-0.5 text-[10px] rounded bg-emerald-600 text-white">ON</span>
+                </button>
+
+                <!-- Auto Mic Toggle -->
+                <button id="btn-automic" onclick="app.toggleAutoMic()" class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold border transition-all bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800" title="読み上げ完了後に自動でマイクをONにする">
+                    <i data-lucide="radio" class="w-4 h-4"></i>
+                    <span class="hidden md:inline">自動マイク</span>
+                    <span id="badge-automic" class="px-1.5 py-0.5 text-[10px] rounded bg-rose-600 text-white">ON</span>
+                </button>
+
+                <!-- Theme Toggle -->
+                <button onclick="app.toggleTheme()" class="p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" title="ダークモード切替">
+                    <i data-lucide="sun" class="w-4 h-4 hidden dark:block text-amber-400"></i>
+                    <i data-lucide="moon" class="w-4 h-4 block dark:hidden text-slate-600"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-5xl w-full mx-auto px-4 py-6 flex flex-col">
+
+        <!-- Toast / Notification Banner -->
+        <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none px-4 sm:px-0"></div>
+
+        <!-- ================= VIEW 1: HOME SCREEN ================= -->
+        <section id="view-home" class="space-y-8 animate-fade-in">
+            <!-- Hero Banner -->
+            <div class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-rose-600 p-6 sm:p-8 text-white shadow-xl shadow-indigo-500/15">
+                <div class="relative z-10 max-w-2xl space-y-3">
+                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-semibold">
+                        <i data-lucide="zap" class="w-3.5 h-3.5 text-amber-300"></i>
+                        <span>早押しクイズモード × 音声認識 × Gemini AI 搭載</span>
+                    </div>
+                    <h2 class="text-2xl sm:text-4xl font-extrabold tracking-tight leading-tight">
+                        わかった瞬間にボタンを押して、声で即答！
+                    </h2>
+                    <p class="text-sm sm:text-base text-indigo-100 leading-relaxed">
+                        問題が1文字ずつ読み上げられる中で、わかった瞬間に「早押しボタン」をプッシュ！回答受付タイマーが回る間にマイクに向かって答えを発声しよう。漢字・ひらがな・カタカナ・略称の表記揺れも柔軟に判定します。
+                    </p>
+                </div>
+                <div class="absolute -right-10 -bottom-10 opacity-15 pointer-events-none">
+                    <i data-lucide="zap" class="w-64 h-64"></i>
+                </div>
+            </div>
+
+            <!-- Speech API Support Notice -->
+            <div id="speech-support-banner" class="hidden rounded-2xl p-4 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/70 flex items-start gap-3 text-amber-800 dark:text-amber-200 text-sm">
+                <i data-lucide="alert-triangle" class="w-5 h-5 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5"></i>
+                <div>
+                    <p class="font-bold">お使いのブラウザは音声認識（Web Speech API）に非対応、または制限されています。</p>
+                    <p class="text-xs mt-1 opacity-90">Chrome / Edge / Safari などの対応ブラウザをご利用いただくか、早押し後に「テキスト入力フォーム」から回答をお楽しみください。</p>
+                </div>
+            </div>
+
+            <!-- Buzzer & Quiz Rule Settings Bar -->
+            <div class="rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 sm:p-5 shadow-sm grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- 1. Quiz Mode Selector -->
+                <div class="flex flex-col justify-between gap-2">
+                    <label class="text-xs font-extrabold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                        <i data-lucide="zap" class="w-3.5 h-3.5 text-rose-500"></i>
+                        <span>出題スタイル（早押し / 通常）</span>
+                    </label>
+                    <div class="grid grid-cols-2 gap-1.5 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/70 dark:border-slate-800">
+                        <button onclick="app.setQuizMode('buzzer')" id="mode-buzzer" class="py-2 px-3 rounded-lg text-xs font-extrabold transition-all bg-rose-600 text-white shadow-sm flex items-center justify-center gap-1">
+                            <span>🚨 早押しモード</span>
+                        </button>
+                        <button onclick="app.setQuizMode('standard')" id="mode-standard" class="py-2 px-3 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800 flex items-center justify-center gap-1">
+                            <span>📖 通常（全文表示）</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. Answer Reception Time Limit Selector -->
+                <div class="flex flex-col justify-between gap-2">
+                    <label class="text-xs font-extrabold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                        <i data-lucide="timer" class="w-3.5 h-3.5 text-indigo-500"></i>
+                        <span>ボタン押下後の回答受付時間</span>
+                    </label>
+                    <div class="grid grid-cols-3 gap-1.5 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/70 dark:border-slate-800">
+                        <button onclick="app.setAnswerTimeLimit(5)" id="timer-5" class="py-2 px-2 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800">
+                            5.0秒 (競技)
+                        </button>
+                        <button onclick="app.setAnswerTimeLimit(8)" id="timer-8" class="py-2 px-2 rounded-lg text-xs font-extrabold transition-all bg-indigo-600 text-white shadow-sm">
+                            8.0秒 (標準)
+                        </button>
+                        <button onclick="app.setAnswerTimeLimit(12)" id="timer-12" class="py-2 px-2 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800">
+                            12.0秒 (余裕)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. Question Count & Reveal Speed -->
+                <div class="flex flex-col justify-between gap-2">
+                    <label class="text-xs font-extrabold text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                        <i data-lucide="sliders" class="w-3.5 h-3.5 text-emerald-500"></i>
+                        <span>出題数・読み上げ速度</span>
+                    </label>
+                    <div class="flex items-center gap-2">
+                        <div class="flex-1 grid grid-cols-2 gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/70 dark:border-slate-800">
+                            <button onclick="app.setQuestionLimit(5)" id="limit-5" class="py-2 px-2 rounded-lg text-xs font-extrabold transition-all bg-indigo-600 text-white">5問</button>
+                            <button onclick="app.setQuestionLimit(8)" id="limit-8" class="py-2 px-2 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">8問</button>
+                        </div>
+                        <select id="char-speed-select" onchange="app.setCharSpeed(this.value)" class="py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none">
+                            <option value="110">文字速度: ゆっくり</option>
+                            <option value="85" selected>文字速度: 標準</option>
+                            <option value="60">文字速度: 早口</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Built-in Categories -->
+            <div class="space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                        <h3 class="text-xl font-bold flex items-center gap-2">
+                            <i data-lucide="layers" class="w-5 h-5 text-indigo-500"></i>
+                            <span>すぐに遊べるクイズモード</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">詳しい解説と別解（表記揺れ）辞書を完備した厳選パック</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <!-- Category 1: World Heritage (Level 2) -->
+                    <div class="group relative rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl hover:border-amber-500/50 dark:hover:border-amber-500/50 transition-all flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+                                    <i data-lucide="landmark" class="w-6 h-6"></i>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                                    世界遺産検定2級対応
+                                </span>
+                            </div>
+                            <h4 class="text-lg font-extrabold mb-2 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                                世界遺産クイズ
+                            </h4>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
+                                日本と世界の代表的な文化遺産・自然遺産・危機遺産から出題！世界遺産検定2級レベルの重要キーワードを声に出してマスターしよう。
+                            </p>
+                        </div>
+                        <button onclick="app.startBuiltInQuiz('heritage')" class="w-full py-3 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-[0.99] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-amber-500/20 transition-all">
+                            <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+                            <span>このモードで挑戦</span>
+                        </button>
+                    </div>
+
+                    <!-- Category 2: World Geography -->
+                    <div class="group relative rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl hover:border-emerald-500/50 dark:hover:border-emerald-500/50 transition-all flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+                                    <i data-lucide="globe-2" class="w-6 h-6"></i>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                                    国名・首都・地形
+                                </span>
+                            </div>
+                            <h4 class="text-lg font-extrabold mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                世界の地理・国当て
+                            </h4>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
+                                「太陽が沈まない国」「世界一面積が小さい国」など、世界の国々・首都・海峡・山脈に関する地理クイズ！略称でも正解判定。
+                            </p>
+                        </div>
+                        <button onclick="app.startBuiltInQuiz('geography')" class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 transition-all">
+                            <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+                            <span>このモードで挑戦</span>
+                        </button>
+                    </div>
+
+                    <!-- Category 3: General Knowledge -->
+                    <div class="group relative rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl hover:border-indigo-500/50 dark:hover:border-indigo-500/50 transition-all flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="w-12 h-12 rounded-2xl bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+                                    <i data-lucide="lightbulb" class="w-6 h-6"></i>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300">
+                                    科学・歴史・文学
+                                </span>
+                            </div>
+                            <h4 class="text-lg font-extrabold mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                一般教養・雑学クイズ
+                            </h4>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
+                                理科・日本史・文学・宇宙・ことわざなど、知っておきたい大人の教養クイズ。早押しクイズ番組気分で声に出して答えよう！
+                            </p>
+                        </div>
+                        <button onclick="app.startBuiltInQuiz('general')" class="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-indigo-600/20 transition-all">
+                            <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+                            <span>このモードで挑戦</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gemini AI Custom Quiz Generator -->
+            <div class="rounded-3xl bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 text-white p-6 sm:p-8 border border-indigo-500/30 shadow-xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div class="space-y-2 max-w-xl">
+                        <div class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-300 bg-indigo-500/20 border border-indigo-400/30 px-3 py-1 rounded-full">
+                            <i data-lucide="wand-2" class="w-3.5 h-3.5"></i>
+                            <span>Gemini AI リアルタイム問題生成</span>
+                        </div>
+                        <h3 class="text-xl sm:text-2xl font-extrabold">
+                            好きなテーマで音声クイズを自動作成！
+                        </h3>
+                        <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                            「戦国武将」「日本の温泉地」「宇宙と惑星」「90年代J-POP」「ITパスポート用語」など、どんなテーマでもAIが一問一答クイズ＆音声認識用の別解リスト（ひらがな・カタカナ・略称）を即座に生成します。
+                        </p>
+                    </div>
+
+                    <div class="flex-1 max-w-md w-full space-y-3 bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+                        <div>
+                            <label for="ai-topic-input" class="block text-xs font-bold text-indigo-200 mb-1.5">
+                                出題テーマを入力（または下のチップを選択）
+                            </label>
+                            <div class="flex gap-2">
+                                <input
+                                    type="text"
+                                    id="ai-topic-input"
+                                    placeholder="例: 日本の城、太陽系の惑星、幕末の歴史..."
+                                    class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700 text-white placeholder-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                >
+                                <select id="ai-difficulty" class="px-3 py-2.5 rounded-xl bg-slate-900/90 border border-slate-700 text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <option value="初級〜中級">標準</option>
+                                    <option value="やさしい初級">やさしい</option>
+                                    <option value="上級・マニアック">激ムズ</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Quick Topic Preset Chips -->
+                        <div class="flex flex-wrap gap-1.5">
+                            <button onclick="app.setAITopic('世界遺産検定2級の重要遺産')" class="text-[11px] px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-indigo-100 transition">🏛️ 世界遺産2級</button>
+                            <button onclick="app.setAITopic('日本の戦国武将')" class="text-[11px] px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-indigo-100 transition">⚔️ 戦国武将</button>
+                            <button onclick="app.setAITopic('世界の首都と国旗')" class="text-[11px] px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-indigo-100 transition">🌍 世界の首都</button>
+                            <button onclick="app.setAITopic('宇宙と天文学')" class="text-[11px] px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-indigo-100 transition">🪐 宇宙・天文</button>
+                            <button onclick="app.setAITopic('元素記号と化学')" class="text-[11px] px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-indigo-100 transition">🧪 化学・元素</button>
+                        </div>
+
+                        <button id="btn-generate-ai" onclick="app.generateAIQuiz()" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 transition-all">
+                            <i data-lucide="sparkles" class="w-4 h-4"></i>
+                            <span>AIでクイズを生成してスタート (5問)</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= VIEW 2: QUIZ PLAY SCREEN ================= -->
+        <section id="view-quiz" class="hidden flex-1 flex flex-col justify-between space-y-5">
+            <!-- Top Quiz Status Bar -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div class="flex items-center gap-2">
+                        <button onclick="app.showHomeConfirm()" class="p-2 rounded-xl text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="ホームに戻る">
+                            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        </button>
+                        <span id="quiz-category-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300">
+                            カテゴリ名
+                        </span>
+                        <span id="quiz-mode-pill" class="px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300">
+                            🚨 早押し
+                        </span>
+                        <span id="quiz-progress-text" class="text-sm font-extrabold text-slate-700 dark:text-slate-200">
+                            第 1 / 5 問
+                        </span>
+                    </div>
+
+                    <!-- Score & Combo Counters -->
+                    <div class="flex items-center gap-3">
+                        <div id="combo-badge" class="hidden items-center gap-1 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-extrabold shadow-sm animate-bounce-short">
+                            <i data-lucide="flame" class="w-3.5 h-3.5 fill-current"></i>
+                            <span id="combo-count">2</span> COMBO!
+                        </div>
+                        <div class="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold">
+                            <i data-lucide="trophy" class="w-4 h-4 text-amber-500"></i>
+                            <span>SCORE:</span>
+                            <span id="score-count" class="text-sm font-black text-indigo-600 dark:text-indigo-400">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="w-full h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                    <div id="quiz-progress-bar" class="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 transition-all duration-500 rounded-full" style="width: 20%"></div>
+                </div>
+            </div>
+
+            <!-- Question Card -->
+            <div class="relative bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-200 dark:border-slate-800 shadow-lg flex-1 flex flex-col justify-between space-y-6">
+                <!-- Question Header & Status Telemetry -->
+                <div class="space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div class="flex items-center gap-3">
+                            <div class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                                <span id="question-status-dot" class="w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping"></span>
+                                <span id="question-phase-label">READING QUESTION...</span>
+                            </div>
+                            <!-- Character Reveal Counter & Elapsed Time -->
+                            <div id="buzzer-telemetry-bar" class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-300">
+                                <span id="char-count-badge">0 / 0文字 (0%)</span>
+                                <span class="text-slate-300 dark:text-slate-600">|</span>
+                                <span id="reading-elapsed-badge" class="font-mono text-indigo-600 dark:text-indigo-400">0.00秒</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button onclick="app.toggleHint()" id="btn-hint" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60 hover:bg-amber-100 transition flex items-center gap-1.5">
+                                <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
+                                <span>ヒント</span>
+                            </button>
+                            <button onclick="app.speakCurrentQuestion()" id="btn-replay-question" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition flex items-center gap-1.5" title="問題文をもう一度読み上げる">
+                                <i data-lucide="volume-2" class="w-3.5 h-3.5 text-indigo-500"></i>
+                                <span>読み直し</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Question Text Area (Progressive Reveal in Buzzer Mode) -->
+                    <div class="min-h-[96px] sm:min-h-[112px] flex items-center">
+                        <h2 id="question-text" class="text-xl sm:text-2xl md:text-3xl font-extrabold leading-relaxed text-slate-800 dark:text-slate-100">
+                            ここに問題文が表示されます。
+                        </h2>
+                    </div>
+
+                    <!-- Post-Read Grace Timer Banner (Shown when full question is read before buzzer pressed) -->
+                    <div id="read-grace-banner" class="hidden px-4 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/50 border border-amber-300 dark:border-amber-800 flex items-center justify-between text-xs font-bold text-amber-800 dark:text-amber-300">
+                        <span class="flex items-center gap-1.5">
+                            <i data-lucide="clock" class="w-4 h-4 text-amber-500 animate-spin"></i>
+                            <span>問題読み上げ完了！早押しボタン受付終了まで...</span>
+                        </span>
+                        <span id="read-grace-timer" class="font-mono text-sm font-black text-rose-600 dark:text-rose-400">5.0s</span>
+                    </div>
+
+                    <!-- Optional Hint Box -->
+                    <div id="hint-box" class="hidden p-3.5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 text-xs sm:text-sm font-medium flex items-center gap-2.5">
+                        <i data-lucide="lightbulb" class="w-4 h-4 text-amber-500 shrink-0"></i>
+                        <span id="hint-text">ヒントテキスト</span>
+                    </div>
+                </div>
+
+                <!-- PHASE A: Early-Press Buzzer Button Stage (Shown in Buzzer Mode before pressing) -->
+                <div id="buzzer-stage-area" class="py-4 flex flex-col items-center justify-center space-y-5 bg-gradient-to-b from-slate-50/80 to-slate-100/80 dark:from-slate-950/50 dark:to-slate-900/60 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6">
+                    <div class="relative flex items-center justify-center">
+                        <!-- Ambient Glow -->
+                        <div class="absolute -inset-4 rounded-full bg-rose-500/20 blur-xl animate-pulse pointer-events-none"></div>
+                        <button
+                            id="btn-buzzer-trigger"
+                            onclick="app.pressBuzzer()"
+                            class="buzzer-btn relative z-10 w-36 h-36 sm:w-40 sm:h-40 rounded-full text-white flex flex-col items-center justify-center gap-1 select-none focus:outline-none"
+                        >
+                            <i data-lucide="hand" class="w-10 h-10 drop-shadow"></i>
+                            <span class="text-xl sm:text-2xl font-black tracking-wider drop-shadow">早押し！</span>
+                            <span class="text-[11px] font-bold bg-black/25 px-2.5 py-0.5 rounded-full">Space / Enter</span>
+                        </button>
+                    </div>
+
+                    <div class="text-center space-y-1">
+                        <p class="text-xs sm:text-sm font-extrabold text-slate-700 dark:text-slate-200">
+                            答えがわかった瞬間にボタンを押して回答権を獲得しよう！
+                        </p>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">
+                            ボタンを押すと読み上げがストップし、自動でマイク回答受付（カウントダウン）が始まります
+                        </p>
+                    </div>
+
+                    <button
+                        type="button"
+                        onclick="app.giveUpQuestion()"
+                        class="px-4 py-2 rounded-xl bg-slate-200/80 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold text-xs flex items-center gap-1.5 transition"
+                    >
+                        <i data-lucide="skip-forward" class="w-3.5 h-3.5"></i>
+                        <span>わからなければパスして解説を見る</span>
+                    </button>
+                </div>
+
+                <!-- PHASE B: Answer Reception & Countdown Timer Stage (Shown after pressing Buzzer, or immediately in Standard Mode) -->
+                <div id="answer-controls-area" class="hidden space-y-4 pt-1">
+                    <!-- Prominent Answer Reception Countdown Banner -->
+                    <div id="answer-timer-box" class="rounded-2xl p-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white border border-indigo-500/40 shadow-lg space-y-2.5">
+                        <div class="flex items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2.5 py-0.5 rounded-full bg-rose-500 text-white text-[11px] font-black uppercase tracking-wider animate-pulse">
+                                    回答受付中
+                                </span>
+                                <span id="answer-timer-status-text" class="text-xs sm:text-sm font-bold text-indigo-100">
+                                    制限時間内に声またはテキストで回答してください！
+                                </span>
+                            </div>
+                            <div class="flex items-baseline gap-1 shrink-0">
+                                <span class="text-xs text-indigo-300 font-bold">残り</span>
+                                <span id="answer-countdown-number" class="font-mono text-2xl sm:text-3xl font-black text-amber-400">8.0</span>
+                                <span class="text-xs text-indigo-300 font-bold">秒</span>
+                            </div>
+                        </div>
+                        <!-- Countdown Progress Bar -->
+                        <div class="w-full h-3 bg-slate-800 rounded-full overflow-hidden p-0.5">
+                            <div id="answer-countdown-bar" class="h-full bg-gradient-to-r from-emerald-400 via-amber-400 to-rose-500 rounded-full transition-all duration-100" style="width: 100%"></div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col items-center justify-center p-5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/80 dark:border-slate-800/80 space-y-3">
+
+                        <!-- Microphone Button with Pulse Ring -->
+                        <div class="relative flex items-center justify-center">
+                            <div id="mic-pulse-ring" class="mic-ring hidden"></div>
+                            <button
+                                id="btn-mic-main"
+                                onclick="app.toggleMicListening()"
+                                class="relative z-10 w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-xl shadow-indigo-500/30 flex items-center justify-center transition-all transform active:scale-95 focus:outline-none"
+                            >
+                                <i data-lucide="mic" id="icon-mic-main" class="w-8 h-8"></i>
+                            </button>
+                        </div>
+
+                        <!-- Waveform Visualizer & Status Text -->
+                        <div class="flex flex-col items-center space-y-1.5 text-center">
+                            <div id="waveform-container" class="h-7 flex items-center justify-center gap-1.5">
+                                <div class="wave-bar h-2 bg-indigo-500"></div>
+                                <div class="wave-bar h-3 bg-indigo-500"></div>
+                                <div class="wave-bar h-2 bg-purple-500"></div>
+                                <div class="wave-bar h-4 bg-purple-500"></div>
+                                <div class="wave-bar h-2 bg-pink-500"></div>
+                                <div class="wave-bar h-3 bg-pink-500"></div>
+                                <div class="wave-bar h-2 bg-indigo-500"></div>
+                            </div>
+                            <p id="mic-status-label" class="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300">
+                                マイクボタンを押して声で回答してください
+                            </p>
+                        </div>
+
+                        <!-- Real-time Speech Transcript Preview -->
+                        <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-xl px-4 py-2.5 border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 min-h-[42px]">
+                            <div class="flex items-center gap-2 text-xs text-slate-400 shrink-0">
+                                <i data-lucide="ear" class="w-4 h-4 text-indigo-400"></i>
+                                <span>認識結果:</span>
+                            </div>
+                            <div id="speech-transcript-preview" class="text-sm font-bold text-slate-800 dark:text-slate-100 truncate flex-1 text-right">
+                                <span class="text-slate-400 dark:text-slate-600 font-normal">（待機中...）</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Manual Text Input Form (Fallback & Hybrid Use) -->
+                    <form onsubmit="app.handleTextSubmit(event)" class="flex flex-col sm:flex-row gap-2">
+                        <div class="relative flex-1">
+                            <input
+                                type="text"
+                                id="manual-answer-input"
+                                oninput="app.onManualTyping()"
+                                placeholder="テキストで直接入力してEnterで即回答もできます..."
+                                autocomplete="off"
+                                class="w-full pl-4 pr-10 py-3 rounded-xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-slate-900 transition"
+                            >
+                        </div>
+                        <div class="flex gap-2">
+                            <button
+                                type="submit"
+                                class="flex-1 sm:flex-none px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm flex items-center justify-center gap-1.5 shadow-md shadow-indigo-500/20 transition"
+                            >
+                                <i data-lucide="send" class="w-4 h-4"></i>
+                                <span>回答する</span>
+                            </button>
+                            <button
+                                type="button"
+                                onclick="app.giveUpQuestion()"
+                                class="px-4 py-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs flex items-center justify-center gap-1 transition"
+                                title="パスして答えを見る"
+                            >
+                                <i data-lucide="skip-forward" class="w-4 h-4"></i>
+                                <span>パス</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Answer Feedback & Explanation Overlay Panel -->
+                <div id="feedback-panel" class="hidden rounded-2xl p-5 sm:p-6 border-2 transition-all space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200/60 dark:border-slate-700/60 pb-4">
+                        <div class="flex items-center gap-3">
+                            <div id="feedback-icon-box" class="w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-2xl shrink-0">
+                                ○
+                            </div>
+                            <div>
+                                <div id="feedback-title" class="text-lg sm:text-xl font-black">
+                                    正解！ピンポン！
+                                </div>
+                                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+                                    <span>あなたの回答: <strong id="feedback-user-answer" class="text-slate-700 dark:text-slate-200">---</strong></span>
+                                    <span id="feedback-buzz-stats" class="px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 font-bold text-[11px]">
+                                        早押し: ---
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white/80 dark:bg-slate-900/80 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                            <div class="text-[11px] font-bold text-slate-400 uppercase">正解</div>
+                            <div id="feedback-correct-answer" class="text-base sm:text-lg font-extrabold text-indigo-600 dark:text-indigo-400">
+                                姫路城
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accepted Aliases Display -->
+                    <div class="flex flex-wrap items-center gap-1.5 text-xs">
+                        <span class="text-slate-500 dark:text-slate-400 font-semibold">許容キーワード（別解・読み）:</span>
+                        <div id="feedback-aliases" class="flex flex-wrap gap-1"></div>
+                    </div>
+
+                    <!-- Detailed Explanation -->
+                    <div class="p-4 rounded-xl bg-white/70 dark:bg-slate-900/70 border border-slate-200/60 dark:border-slate-800/60 space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-extrabold text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                                <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+                                解説
+                            </span>
+                            <button onclick="app.speakExplanation()" class="text-xs font-semibold text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1">
+                                <i data-lucide="volume-2" class="w-3.5 h-3.5"></i>
+                                <span>解説を読み上げ</span>
+                            </button>
+                        </div>
+                        <p id="feedback-explanation" class="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                            ここに解説が表示されます。
+                        </p>
+                    </div>
+
+                    <div class="flex justify-end pt-1">
+                        <button
+                            id="btn-next-question"
+                            onclick="app.nextQuestion()"
+                            class="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/25 transition"
+                        >
+                            <span id="btn-next-label">次の問題へ</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= VIEW 3: RESULT & REVIEW SCREEN ================= -->
+        <section id="view-result" class="hidden space-y-6 animate-fade-in">
+            <!-- Summary Hero Card -->
+            <div class="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-xl text-center space-y-6">
+                <div class="inline-flex p-4 rounded-3xl bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400">
+                    <i data-lucide="award" class="w-12 h-12"></i>
+                </div>
+
+                <div class="space-y-2">
+                    <span id="result-category-label" class="px-3 py-1 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300">
+                        クイズ結果
+                    </span>
+                    <h2 id="result-rank-title" class="text-2xl sm:text-4xl font-black text-slate-800 dark:text-slate-100">
+                        素晴らしい！クイズマスター級！
+                    </h2>
+                </div>
+
+                <!-- Score Metrics Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 max-w-3xl mx-auto">
+                    <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
+                        <div class="text-xs font-bold text-slate-400">総合スコア</div>
+                        <div id="result-score" class="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-indigo-400 mt-1">500</div>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
+                        <div class="text-xs font-bold text-slate-400">正解数</div>
+                        <div id="result-accuracy" class="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-1">5 / 5</div>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
+                        <div class="text-xs font-bold text-slate-400">最大コンボ</div>
+                        <div id="result-max-combo" class="text-2xl sm:text-3xl font-black text-amber-500 mt-1">5</div>
+                    </div>
+                    <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
+                        <div class="text-xs font-bold text-slate-400">正答率</div>
+                        <div id="result-percent" class="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400 mt-1">100%</div>
+                    </div>
+                    <div class="col-span-2 sm:col-span-1 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800">
+                        <div class="text-xs font-bold text-slate-400">平均早押し地点</div>
+                        <div id="result-avg-buzz" class="text-2xl sm:text-3xl font-black text-rose-500 mt-1">45%</div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap items-center justify-center gap-3 pt-2">
+                    <button onclick="app.retryCurrentQuiz()" class="px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-indigo-500/20 transition">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                        <span>もう一度挑戦する</span>
+                    </button>
+                    <button id="btn-retry-wrong" onclick="app.retryWrongQuestions()" class="hidden px-6 py-3.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-rose-500/20 transition">
+                        <i data-lucide="flame" class="w-4 h-4"></i>
+                        <span>間違えた問題だけ復習</span>
+                    </button>
+                    <button onclick="app.goHome()" class="px-6 py-3.5 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-sm flex items-center gap-2 transition">
+                        <i data-lucide="home" class="w-4 h-4"></i>
+                        <span>カテゴリ選択へ戻る</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Question Review List -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-extrabold flex items-center gap-2 px-1">
+                    <i data-lucide="list-checks" class="w-5 h-5 text-indigo-500"></i>
+                    <span>問題の振り返り・解説リスト</span>
+                </h3>
+                <div id="review-list-container" class="space-y-3"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Custom Modal for Confirming Exit / Loading -->
+    <div id="modal-overlay" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div id="modal-content" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <h3 id="modal-title" class="text-lg font-extrabold">確認</h3>
+            <p id="modal-body" class="text-sm text-slate-600 dark:text-slate-400">ホーム画面に戻りますか？現在のクイズの進行状況はリセットされます。</p>
+            <div id="modal-actions" class="flex justify-end gap-2 pt-2">
+                <button onclick="app.closeModal()" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold">キャンセル</button>
+                <button onclick="app.confirmGoHome()" class="px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold">ホームへ戻る</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * Built-in Quiz Datasets
+         * Each question contains:
+         * - q: Question text
+         * - answer: Canonical display answer
+         * - aliases: Array of acceptable readings/variations (Kanji, Hiragana, Katakana, English, abbreviations)
+         * - hint: Helpful hint
+         * - explanation: Detailed explanation read aloud or displayed after answering
+         */
+        const BUILTIN_QUIZZES = {
+            heritage: {
+                title: "世界遺産クイズ（2級対応）",
+                questions: [
+                    {
+                        q: "1993年に法隆寺地域の仏教建造物とともに日本初の世界文化遺産に登録された、兵庫県姫路市にある白漆喰の城郭は何でしょう？",
+                        answer: "姫路城",
+                        aliases: ["姫路城", "ひめじじょう", "ヒメジジョウ", "白鷺城", "しらさぎじょう", "はくろじょう", "姫路", "ひめじ", "himeji"],
+                        hint: "シラサギが羽を広げたような優美な姿から「白鷺城」とも呼ばれます。",
+                        explanation: "姫路城は1993年12月に奈良の法隆寺とともに日本初の世界文化遺産に登録されました。17世紀初頭の日本の木造城郭建築の最高峰として高く評価されています。"
+                    },
+                    {
+                        q: "エジプトのナイル川流域でアスワン・ハイ・ダムの建設により水没の危機に瀕したものの、ユネスコの救済キャンペーンによって移築され、世界遺産条約誕生のきっかけとなった古代遺跡は何でしょう？",
+                        answer: "アブ・シンベル神殿",
+                        aliases: ["アブシンベル神殿", "アブ・シンベル神殿", "あぶしんべるしんでん", "アブシンベル", "あぶしんべる", "アブシンベルからフィラエまでのヌビア遺跡群", "ヌビア遺跡群", "ヌビア遺跡", "abu simbel"],
+                        hint: "古代エジプト新王国時代のラムセス2世が建造した巨大な岩窟神殿です。",
+                        explanation: "アブ・シンベルからフィラエまでのヌビア遺跡群は、1960年代のアスワン・ハイ・ダム建設による水没危機から国際協力によって移築・救済され、1972年の世界遺産条約採択の直接の契機となりました。"
+                    },
+                    {
+                        q: "鹿児島県の屋久島とともに、1993年に日本初の世界自然遺産に登録された、青森県と秋田県にまたがる世界最大級の原生的なブナ林が広がる山地はどこでしょう？",
+                        answer: "白神山地",
+                        aliases: ["白神山地", "しらかみさんち", "シラカミサンチ", "白神", "しらかみ", "shirakami"],
+                        hint: "「白」という漢字に「神様の山」と書く東北地方の自然遺産です。",
+                        explanation: "白神山地は1993年に屋久島とともに日本初の世界自然遺産に登録されました。東アジア最大級の原生的なブナ林がほぼ手つかずのまま残されています。"
+                    },
+                    {
+                        q: "スペインのバルセロナにあり、建築家アントニ・ガウディが設計を手がけ、2026年にメインタワーであるイエス・キリストの塔が完成を迎えたことで知られる未完の教会は何でしょう？",
+                        answer: "サグラダ・ファミリア",
+                        aliases: ["サグラダファミリア", "サグラダ・ファミリア", "さぐらだふぁみりあ", "聖家族教会", "せいかぞくきょうかい", "ガウディの作品群", "アントニ・ガウディの作品群", "sagrada familia"],
+                        hint: "日本語では「聖家族贖罪教会」と訳される、バルセロナの象徴的な大聖堂です。",
+                        explanation: "「アントニ・ガウディの作品群」の一部として世界遺産に登録されているサグラダ・ファミリアは、1882年に着工され、ガウディ没後100年となる2026年に中心のイエス・キリストの塔が完成しました。"
+                    },
+                    {
+                        q: "ペルーのアンデス山脈、標高約2,430メートルの尾根に位置する「空中都市」とも呼ばれる15世紀インカ帝国の遺跡で、文化遺産と自然遺産の両方の価値を持つ複合遺産は何でしょう？",
+                        answer: "マチュ・ピチュ",
+                        aliases: ["マチュピチュ", "マチュ・ピチュ", "まちゅぴちゅ", "マチュピチュの歴史保護区", "マチュ・ピチュの歴史保護区", "machu picchu"],
+                        hint: "「老いた峰」という意味を持つ、インカ帝国の石造りの山岳都市遺跡です。",
+                        explanation: "マチュ・ピチュの歴史保護区は1983年に登録された複合遺産です。アンデスの急峻な山頂に精巧な石組みの神殿や段々畑が築かれています。"
+                    },
+                    {
+                        q: "フランスのノルマンディー地方とブルターニュ地方の境に近いサン・マロ湾上に浮かぶ小島に築かれた修道院で、「西洋の驚異」と称される世界遺産は何でしょう？",
+                        answer: "モン・サン・ミシェル",
+                        aliases: ["モンサンミシェル", "モン・サン・ミシェル", "もんさんみしぇる", "モンサンミッシェル", "モン・サン・ミッシェル", "もんさんみっしぇる", "mont saint michel"],
+                        hint: "大天使ミカエルのお告げによって潮の満ち引きが激しい岩山に建てられた修道院です。",
+                        explanation: "「モン・サン・ミシェルとその湾」は1979年に世界遺産に登録されました。中世の巡礼地であり、ゴシックやロマネスクなど時代ごとの建築様式が重なり合っています。"
+                    },
+                    {
+                        q: "日本の「古都京都の文化財」の構成資産に含まれているものの、行政区域としては京都府ではなく「滋賀県大津市」に位置している、最澄が開いた天台宗の総本山はどこでしょう？",
+                        answer: "延暦寺",
+                        aliases: ["延暦寺", "えんりゃくじ", "エンリャクジ", "比叡山延暦寺", "ひえいざんえんりゃくじ", "比叡山", "ひえいざん", "enryakuji"],
+                        hint: "比叡山の山上一帯に広がる寺院で、法然・親鸞・道元・日蓮など多くの名僧を輩出しました。",
+                        explanation: "比叡山延暦寺は滋賀県大津市に位置していますが、平安京の鬼門（北東）を守る寺院として京都の歴史と密接に関わるため、「古都京都の文化財」の17資産のひとつに登録されています。"
+                    },
+                    {
+                        q: "カンボジアのシェムリアップ近くに広がる、12世紀前半にクメール王朝のアンコール王スールヤヴァルマン2世によってヒンドゥー教寺院として建立された巨大な石造寺院遺跡は何でしょう？",
+                        answer: "アンコール・ワット",
+                        aliases: ["アンコールワット", "アンコール・ワット", "あんこーるわっと", "アンコール遺跡", "アンコール", "あんこーる", "angkor wat"],
+                        hint: "カンボジアの国旗の中央にも描かれている5本の塔が特徴的な遺跡です。",
+                        explanation: "アンコール遺跡群の中心をなすアンコール・ワットは、当初ヒンドゥー教のヴィシュヌ神に捧げる寺院として建てられ、後に仏教寺院へと改修されました。"
+                    }
+                ]
+            },
+            geography: {
+                title: "世界の地理・国当てクイズ",
+                questions: [
+                    {
+                        q: "面積は約0.44平方キロメートルと東京ディズニーランドよりも小さく、イタリアの首都ローマ市内に位置する、世界一面積が小さい独立国はどこでしょう？",
+                        answer: "バチカン市国",
+                        aliases: ["バチカン市国", "ばちかんしこく", "バチカン", "ばちかん", "ヴァチカン", "ヴァチカン市国", "vatican"],
+                        hint: "カトリック教会の総本山であるサン・ピエトロ大聖堂があり、ローマ教皇が統治しています。",
+                        explanation: "バチカン市国は世界最小の独立国であり、国土全体が『バチカン市国』として世界文化遺産にも登録されています。"
+                    },
+                    {
+                        q: "南アメリカ大陸の太平洋岸に沿って南北に約4,300キロメートルと世界で最も細長い国土を持ち、首都をサンティアゴとする国はどこでしょう？",
+                        answer: "チリ",
+                        aliases: ["チリ", "ちり", "チリ共和国", "ちりきょうわこく", "chile"],
+                        hint: "銅の産出量が世界第1位で、イースター島（ラパ・ヌイ）もこの国の領土です。",
+                        explanation: "チリ共和国はアンデス山脈と太平洋に挟まれた南北に非常に細長い国で、北部のアタカマ砂漠から南部の氷河地帯まで多様な気候を持ちます。"
+                    },
+                    {
+                        q: "ヨーロッパのイベリア半島と北アフリカのモロッコを隔てており、地中海と大西洋を結んでいる海峡の名前は何でしょう？",
+                        answer: "ジブラルタル海峡",
+                        aliases: ["ジブラルタル海峡", "じぶらるたるかいきょう", "ジブラルタル", "じぶらるたる", "gibraltar"],
+                        hint: "最も狭い場所では幅が約14キロメートルしかなく、ヨーロッパからアフリカ大陸が肉眼で見えます。",
+                        explanation: "ジブラルタル海峡は大西洋と地中海を結ぶ海上交通の要衝です。海峡の北岸にはイギリス領ジブラルタルがあります。"
+                    },
+                    {
+                        q: "オーストラリアの首都はシドニーでもメルボルンでもありません。計画都市として建設されたオーストラリアの本当の首都はどこでしょう？",
+                        answer: "キャンベラ",
+                        aliases: ["キャンベラ", "きゃんべら", "カンベラ", "かんべら", "canberra"],
+                        hint: "2大都市シドニーとメルボルンが首都の座を争ったため、両都市の中間地点付近に作られた都市です。",
+                        explanation: "オーストラリアの首都はキャンベラです。先住民の言葉で「出会いの場所」を意味し、20世紀初頭に計画都市として建設されました。"
+                    },
+                    {
+                        q: "アフリカ大陸の北東部を流れ、ヴィクトリア湖などを水源として地中海へと注ぐ、全長約6,650キロメートルの世界最長級の河川は何でしょう？",
+                        answer: "ナイル川",
+                        aliases: ["ナイル川", "ないるがわ", "ナイル", "ないる", "ナイル河", "nile"],
+                        hint: "古代ギリシャの歴史家ヘロドトスが「エジプトは〇〇〇のたまもの」と記した大河です。",
+                        explanation: "ナイル川はアフリカ大陸を北上して地中海に注ぐ世界最長級の河川で、古代から流域に豊かな農業とエジプト文明をもたらしました。"
+                    },
+                    {
+                        q: "ヨーロッパとアジアの2つの大陸にまたがる国で、最大都市はイスタンブール、首都はアンカラである国はどこでしょう？",
+                        answer: "トルコ",
+                        aliases: ["トルコ", "とるこ", "トルコ共和国", "テュルキエ", "てゅるきえ", "turkey", "turkiye"],
+                        hint: "カッパドキアやケバブ、トルコアイスでも親しまれている国です。",
+                        explanation: "トルコ共和国はボスポラス海峡を挟んでアジア側（アナトリア半島）とヨーロッパ側にまたがる国で、首都は内陸部のアンカラです。"
+                    },
+                    {
+                        q: "ネパールと中国（チベット自治区）の国境にそびえ立つ、標高8,848メートルで世界最高峰の山は何でしょう？",
+                        answer: "エベレスト",
+                        aliases: ["エベレスト", "えべれすと", "チョモランマ", "ちょもらんま", "サガルマータ", "さがるまーた", "エベレスト山", "everest"],
+                        hint: "チベット語では「チョモランマ」、ネパール語では「サガルマータ」とも呼ばれます。",
+                        explanation: "ヒマラヤ山脈にあるエベレストは世界最高峰の山です。チベット語のチョモランマ、ネパール語のサガルマータでの回答も正解です！"
+                    },
+                    {
+                        q: "国旗が世界で唯一「四角形ではない（2つの三角形を組み合わせた五角形）」ことでも知られる、ヒマラヤ山脈の麓にある南アジアの国はどこでしょう？",
+                        answer: "ネパール",
+                        aliases: ["ネパール", "ねぱーる", "ネパール連邦民主共和国", "nepal"],
+                        hint: "首都はカトマンズで、世界の屋根と呼ばれるヒマラヤの登山拠点として有名です。",
+                        explanation: "ネパールは世界で唯一、長方形や正方形ではない変形国旗を持つ国です。太陽と月が描かれており、国家が太陽や月のように永続することを願っています。"
+                    }
+                ]
+            },
+            general: {
+                title: "一般教養・雑学クイズ",
+                questions: [
+                    {
+                        q: "元素記号「Au」、原子番号79。錆びにくく美しい輝きを持つことから、古くから貨幣や装飾品、オリンピックの1位のメダルに使われる金属は何でしょう？",
+                        answer: "金",
+                        aliases: ["金", "きん", "キン", "ゴールド", "ごーるど", "gold", "au"],
+                        hint: "銀（Ag）・銅（Cu）と並ぶ貴金属の代表格です。",
+                        explanation: "元素記号Auはラテン語で「光り輝く夜明け」を意味するオーラム（Aurum）に由来します。金は非常に延性・展性に富み、1グラムで約3000メートルもの長さに伸ばすことができます。"
+                    },
+                    {
+                        q: "夏目漱石の有名な小説で、「親譲りの無鉄砲で小供の時から損ばかりしている」という書き出しで始まり、愛媛県松山の中学校に赴任した数学教師が主人公の作品は何でしょう？",
+                        answer: "坊っちゃん",
+                        aliases: ["坊っちゃん", "坊ちゃん", "ぼっちゃん", "ボッチャン", "bocchan"],
+                        hint: "赤シャツ、野だいこ、山嵐、マドンナなどの個性的な登場人物が出てくる小説です。",
+                        explanation: "『坊っちゃん』は1906年に発表された夏目漱石の代表作のひとつで、漱石自身が松山の中学校に英語教師として赴任した実体験がもとになっています。"
+                    },
+                    {
+                        q: "太陽系の惑星のなかで、直径が地球の約11倍と最も大きく、大赤斑（だいせきはん）と呼ばれる巨大な渦巻き模様がある惑星は何でしょう？",
+                        answer: "木星",
+                        aliases: ["木星", "もくせい", "モクセイ", "ジュピター", "じゅぴたー", "jupiter"],
+                        hint: "内側から数えて5番目を公転する巨大なガス惑星で、英語ではジュピターと呼ばれます。",
+                        explanation: "木星は太陽系最大の惑星で、主に水素とヘリウムからなる巨大ガス惑星です。ガリレオ・ガリレイが発見したイオ、エウロパ、ガニメデ、カリストの4大衛星でも有名です。"
+                    },
+                    {
+                        q: "1867年、江戸幕府の第15代将軍・徳川慶喜が政権を朝廷に返上した歴史上の出来事を、漢字4文字で何というでしょう？",
+                        answer: "大政奉還",
+                        aliases: ["大政奉還", "たいせいほうかん", "タイセイホウカン", "たいせいほうかん"],
+                        hint: "京都の二条城・二の丸御殿の大広間で発表されました。",
+                        explanation: "大政奉還は1867年（慶応3年）に徳川慶喜が政権を朝廷へ返上した出来事で、これにより約260年続いた江戸幕府による統治が幕を閉じました。"
+                    },
+                    {
+                        q: "植物が太陽の光のエネルギーを使って、水と二酸化炭素からデンプンなどの養分と酸素を作り出す働きを何というでしょう？",
+                        answer: "光合成",
+                        aliases: ["光合成", "こうごうせい", "コウゴウセイ", "photosynthesis"],
+                        hint: "葉の細胞の中にある「葉緑体」で行われる働きです。",
+                        explanation: "光合成は植物や藻類が光エネルギーを利用して二酸化炭素と水から有機物（炭水化物）を合成し、酸素を放出する生命活動に不可欠な反応です。"
+                    },
+                    {
+                        q: "ことわざで、思いがけない場所から思わぬ幸運や利益が飛び出してくることを、「何から駒（こま）」というでしょう？",
+                        answer: "瓢箪（ひょうたん）",
+                        aliases: ["ひょうたん", "ヒョウタン", "瓢箪", "瓢箪から駒", "ひょうたんからこま", "ひょうたんから駒"],
+                        hint: "くびれた形をした植物の果実で、昔は乾燥させて水筒や酒器として使われました。",
+                        explanation: "「瓢箪から駒」は、小さな口しかないひょうたんから大きな馬（駒）が飛び出すはずがないことから、予想もしない出来事や冗談で言ったことが実現するたとえとして使われます。"
+                    },
+                    {
+                        q: "人間の体にある臓器のなかで、解毒作用や胆汁の生成、栄養分の貯蔵などを行い、重さが約1.2〜1.5キログラムと最も大きく重い臓器は何でしょう？",
+                        answer: "肝臓",
+                        aliases: ["肝臓", "かんぞう", "カンゾウ", "レバー", "ればー", "liver"],
+                        hint: "少々のダメージがあっても自覚症状が出にくいため「沈黙の臓器」とも呼ばれます。",
+                        explanation: "肝臓は腹部の右上にある人体最大の臓器で、アルコールなどの解毒、エネルギーの代謝・貯蔵、消化を助ける胆汁の合成など500種類以上の働きを担っています。"
+                    },
+                    {
+                        q: "1901年に第1回授賞式が行われたノーベル賞は、スウェーデンの発明家アルフレッド・ノーベルの遺言によって創設されました。彼が発明して巨万の富を築いた爆薬は何でしょう？",
+                        answer: "ダイナマイト",
+                        aliases: ["ダイナマイト", "だいなまいと", "dynamite"],
+                        hint: "ニトログリセリンを珪藻土（けいそうど）に染み込ませて安全に扱えるようにした爆薬です。",
+                        explanation: "アルフレッド・ノーベルは不安定で危険だったニトログリセリンを安全に扱えるようにした「ダイナマイト」を1867年に発明し、鉱山開発やトンネル工事に革命をもたらしました。"
+                    }
+                ]
+            }
+        };
+
+        /**
+         * Sound Effects Engine (Web Audio API Synthesizer)
+         * Generates quiz chimes ("Question!", "Ping-Pong!", "Bubu!", "Fanfare!") without external audio files.
+         */
+        class SoundEffects {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            initContext() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    if (AudioCtx) {
+                        this.ctx = new AudioCtx();
+                    }
+                }
+                if (this.ctx && this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            // "Ja-jan!" Question appear sound
+            playQuestionAppear() {
+                if (!this.enabled) return;
+                this.initContext();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                this.playTone(523.25, now, 0.12, 'triangle', 0.2);       // C5
+                this.playTone(659.25, now + 0.08, 0.12, 'triangle', 0.2); // E5
+                this.playTone(783.99, now + 0.16, 0.35, 'triangle', 0.25);// G5
+            }
+
+            // "Ping-Pong! Ping-Pong!" Classic Japanese Quiz Correct Chime
+            playCorrect() {
+                if (!this.enabled) return;
+                this.initContext();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                // First Ping-Pong (B5 -> G5)
+                this.playTone(987.77, now, 0.16, 'sine', 0.3);
+                this.playTone(783.99, now + 0.16, 0.28, 'sine', 0.3);
+                // Second Ping-Pong
+                this.playTone(987.77, now + 0.42, 0.16, 'sine', 0.3);
+                this.playTone(783.99, now + 0.58, 0.45, 'sine', 0.3);
+            }
+
+            // "Bu-bu-!" Classic Quiz Wrong Buzzer
+            playWrong() {
+                if (!this.enabled) return;
+                this.initContext();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                this.playTone(146.83, now, 0.22, 'sawtooth', 0.22);       // D3
+                this.playTone(130.81, now + 0.26, 0.42, 'sawtooth', 0.25);// C3
+            }
+
+            // "Pi-ko-n! / Ga-shan!" Authentic Buzzer Button Hit Sound
+            playBuzzerHit() {
+                if (!this.enabled) return;
+                this.initContext();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                // Crisp high two-tone electronic quiz buzzer (A5 -> E6)
+                this.playTone(880.0, now, 0.07, 'square', 0.22);
+                this.playTone(1318.5, now + 0.06, 0.28, 'square', 0.26);
+            }
+
+            // Countdown tick sound for Answer Reception Timer
+            playCountdownTick(isUrgent = false) {
+                if (!this.enabled) return;
+                this.initContext();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const freq = isUrgent ? 987.77 : 659.25; // B5 urgent or E5 normal
+                this.playTone(freq, now, 0.045, 'sine', isUrgent ? 0.18 : 0.10);
+            }
+
+            // Mic start click sound
+            playMicStart() {
+                if (!this.enabled) return;
+                this.initContext();
+                if (!this.ctx) return;
+                const now = this.ctx.currentTime;
+                this.playTone(880, now, 0.08, 'sine', 0.15);
+            }
+
+            // Result screen celebratory fanfare
+            playFanfare() {
+                if (!this.enabled) return;
+                this.initContext();
+                if (!this.ctx) return;
+
+                const now = this.ctx.currentTime;
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((freq, idx) => {
+                    this.playTone(freq, now + idx * 0.12, idx === 3 ? 0.5 : 0.14, 'triangle', 0.25);
+                });
+            }
+
+            playTone(freq, startTime, duration, type = 'sine', maxGain = 0.25) {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, startTime);
+
+                gain.gain.setValueAtTime(0.001, startTime);
+                gain.gain.exponentialRampToValueAtTime(maxGain, startTime + 0.02);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+
+                osc.start(startTime);
+                osc.stop(startTime + duration + 0.02);
+            }
+        }
+
+        /**
+         * Answer Matcher Engine
+         * Normalizes Kanji/Hiragana/Katakana/Romaji, full-width/half-width, symbols, and polite speech suffixes
+         * so voice recognition variations are judged accurately.
+         */
+        class AnswerMatcher {
+            // Convert Katakana to Hiragana for unified phonetic comparison
+            static katakanaToHiragana(str) {
+                return str.replace(/[\u30a1-\u30f6]/g, function(match) {
+                    const chr = match.charCodeAt(0) - 0x60;
+                    return String.fromCharCode(chr);
+                });
+            }
+
+            // Normalize string: lowercase, full-width to half-width alphanumeric, strip punctuation & conversational filler
+            static normalize(str) {
+                if (!str) return "";
+                let s = str.trim().toLowerCase();
+
+                // Convert full-width alphanumeric to half-width
+                s = s.replace(/[Ａ-Ｚａ-ｚ０-９]/g, function(ch) {
+                    return String.fromCharCode(ch.charCodeAt(0) - 0xFEE0);
+                });
+
+                // Convert Katakana to Hiragana
+                s = this.katakanaToHiragana(s);
+
+                // Remove common conversational prefixes/suffixes in voice answers ("答えは〜です", "〜かな", "〜だと思います")
+                s = s.replace(/^(こたえは|せいかいは|たぶん|えっと|あのー|うーんと)/g, "");
+                s = s.replace(/(です|ます|だよ|だね|かな|だとおもいます|だとおもう|でしょうか|でしょう)$/g, "");
+
+                // Remove spaces, punctuation, middle dots, hyphens/long vowels normalization
+                s = s.replace(/[\s　・、。！？!?,.\-ー〜～「」『』（）()]/g, "");
+
+                return s;
+            }
+
+            /**
+             * Checks if user's spoken/typed text matches the canonical answer or any of its aliases
+             */
+            static isMatch(userRawInput, canonicalAnswer, aliases = []) {
+                const normUser = this.normalize(userRawInput);
+                if (!normUser) return false;
+
+                // Combine canonical answer + aliases
+                const candidateList = [canonicalAnswer, ...(aliases || [])];
+
+                for (const candidate of candidateList) {
+                    const normCandidate = this.normalize(candidate);
+                    if (!normCandidate) continue;
+
+                    // 1. Exact match after normalization
+                    if (normUser === normCandidate) {
+                        return true;
+                    }
+
+                    // 2. Substring match: If user says "答えは姫路城です" -> contains "姫路城"
+                    // Guard against overly short 1-character false positives unless exact
+                    if (normCandidate.length >= 2 && normUser.includes(normCandidate)) {
+                        return true;
+                    }
+
+                    // 3. Reverse containment if user said core name e.g. "アブシンベル" for "アブ・シンベル神殿" (already in aliases, but extra safety)
+                    if (normUser.length >= 3 && normCandidate.includes(normUser)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        class VoiceQuizApp {
+            constructor() {
+                this.sfx = new SoundEffects();
+                this.ttsEnabled = true;
+                this.autoMicEnabled = true;
+                this.questionLimit = 5;
+
+                // Buzzer Quiz Settings
+                this.quizMode = 'buzzer'; // 'buzzer' | 'standard'
+                this.answerTimeLimitSec = 8; // 5 | 8 | 12 seconds to answer after buzzing
+                this.charIntervalMs = 85; // Progressive reveal speed (ms per character)
+
+                // Quiz Session State
+                this.currentCategoryTitle = "";
+                this.questions = [];
+                this.currentIndex = 0;
+                this.score = 0;
+                this.combo = 0;
+                this.maxCombo = 0;
+                this.correctCount = 0;
+                this.history = []; // { questionObj, userAnswer, isCorrect, buzzCharIndex, totalChars, buzzElapsedSec, isTimeout }
+                this.isAnswered = false;
+
+                // Buzzer & Timer Runtime State
+                this.phase = 'idle'; // 'reading' | 'answering' | 'feedback'
+                this.revealedCharCount = 0;
+                this.questionStartTimestamp = 0;
+                this.buzzElapsedSec = 0;
+                this.typewriterTimer = null;
+                this.readGraceInterval = null;
+                this.answerCountdownInterval = null;
+                this.remainingAnswerMs = 0;
+                this.lastTickSecond = null;
+                this.speechDetectedDuringWindow = false;
+
+                // Speech Recognition State
+                this.recognition = null;
+                this.isListening = false;
+                this.speechSupported = false;
+
+                this.initSpeechRecognition();
+                this.initKeyboardShortcuts();
+            }
+
+            initSpeechRecognition() {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    this.speechSupported = false;
+                    document.getElementById('speech-support-banner').classList.remove('hidden');
+                    return;
+                }
+
+                this.speechSupported = true;
+                this.recognition = new SpeechRecognition();
+                this.recognition.lang = 'ja-JP';
+                this.recognition.interimResults = true;
+                this.recognition.continuous = false;
+                this.recognition.maxAlternatives = 3;
+
+                this.recognition.onstart = () => {
+                    this.isListening = true;
+                    this.updateMicUI(true);
+                };
+
+                this.recognition.onspeechstart = () => {
+                    // Extend grace slightly if user starts speaking before timeout
+                    this.speechDetectedDuringWindow = true;
+                };
+
+                this.recognition.onresult = (event) => {
+                    if (this.isAnswered) return;
+                    this.speechDetectedDuringWindow = true;
+
+                    let interimTranscript = '';
+                    let finalTranscript = '';
+                    let allAlternatives = [];
+
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        const res = event.results[i];
+                        const transcript = res[0].transcript;
+                        for (let j = 0; j < res.length; j++) {
+                            allAlternatives.push(res[j].transcript);
+                        }
+                        if (res.isFinal) {
+                            finalTranscript += transcript;
+                        } else {
+                            interimTranscript += transcript;
+                        }
+                    }
+
+                    const displayStr = finalTranscript || interimTranscript;
+                    this.updateTranscriptPreview(displayStr);
+
+                    // If user is actively speaking and timer is below 2.2 seconds, hold timer at 2.2s so recognition can finish
+                    if (interimTranscript && this.remainingAnswerMs > 0 && this.remainingAnswerMs < 2200) {
+                        this.remainingAnswerMs = 2200;
+                        const statusEl = document.getElementById('answer-timer-status-text');
+                        if (statusEl) statusEl.textContent = '🎙️ 音声を認識中...（判定までタイマー延長中）';
+                    }
+
+                    const currentQ = this.questions[this.currentIndex];
+                    if (!currentQ) return;
+
+                    // Instant check on interim result if it matches a known alias
+                    const matchedAlternative = allAlternatives.find(alt =>
+                        AnswerMatcher.isMatch(alt, currentQ.answer, currentQ.aliases)
+                    );
+
+                    if (matchedAlternative) {
+                        this.stopMicListening();
+                        this.submitAnswer(matchedAlternative);
+                        return;
+                    }
+
+                    // If final result arrived and didn't match above, submit the primary final transcript
+                    if (finalTranscript) {
+                        this.stopMicListening();
+                        this.submitAnswer(finalTranscript);
+                    }
+                };
+
+                this.recognition.onerror = (event) => {
+                    this.isListening = false;
+                    this.updateMicUI(false);
+                    if (event.error === 'not-allowed') {
+                        this.showToast('マイクへのアクセスが許可されていません。テキスト入力をご利用ください。', 'warning');
+                    }
+                };
+
+                this.recognition.onend = () => {
+                    this.isListening = false;
+                    this.updateMicUI(false);
+                };
+            }
+
+            initKeyboardShortcuts() {
+                window.addEventListener('keydown', (e) => {
+                    const quizViewVisible = !document.getElementById('view-quiz').classList.contains('hidden');
+                    if (!quizViewVisible) return;
+
+                    const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+                    if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') return;
+
+                    // In Buzzer Reading Phase: Space or Enter hits the Buzzer!
+                    if (this.phase === 'reading' && !this.isAnswered && (e.code === 'Space' || e.code === 'Enter')) {
+                        e.preventDefault();
+                        this.pressBuzzer();
+                        return;
+                    }
+
+                    // In Answering Phase: Space toggles Mic
+                    if (this.phase === 'answering' && !this.isAnswered && e.code === 'Space') {
+                        e.preventDefault();
+                        this.toggleMicListening();
+                        return;
+                    }
+
+                    // In Feedback Phase: Enter or Space goes to next question
+                    if (this.phase === 'feedback' && this.isAnswered && (e.code === 'Enter' || e.code === 'Space')) {
+                        e.preventDefault();
+                        this.nextQuestion();
+                    }
+                });
+            }
+
+            /* ================= UI & CONTROLS ================= */
+            toggleTheme() {
+                document.documentElement.classList.toggle('dark');
+            }
+
+            toggleTTS() {
+                this.ttsEnabled = !this.ttsEnabled;
+                const badge = document.getElementById('badge-tts');
+                badge.textContent = this.ttsEnabled ? 'ON' : 'OFF';
+                badge.className = this.ttsEnabled
+                    ? 'px-1.5 py-0.5 text-[10px] rounded bg-indigo-600 text-white'
+                    : 'px-1.5 py-0.5 text-[10px] rounded bg-slate-400 text-white';
+
+                if (!this.ttsEnabled && 'speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                }
+            }
+
+            toggleSFX() {
+                this.sfx.enabled = !this.sfx.enabled;
+                const badge = document.getElementById('badge-sfx');
+                badge.textContent = this.sfx.enabled ? 'ON' : 'OFF';
+                badge.className = this.sfx.enabled
+                    ? 'px-1.5 py-0.5 text-[10px] rounded bg-emerald-600 text-white'
+                    : 'px-1.5 py-0.5 text-[10px] rounded bg-slate-400 text-white';
+            }
+
+            toggleAutoMic() {
+                this.autoMicEnabled = !this.autoMicEnabled;
+                const badge = document.getElementById('badge-automic');
+                badge.textContent = this.autoMicEnabled ? 'ON' : 'OFF';
+                badge.className = this.autoMicEnabled
+                    ? 'px-1.5 py-0.5 text-[10px] rounded bg-rose-600 text-white'
+                    : 'px-1.5 py-0.5 text-[10px] rounded bg-slate-400 text-white';
+            }
+
+            setQuizMode(mode) {
+                this.quizMode = mode;
+                const btnBuzzer = document.getElementById('mode-buzzer');
+                const btnStandard = document.getElementById('mode-standard');
+                if (mode === 'buzzer') {
+                    btnBuzzer.className = 'py-2 px-3 rounded-lg text-xs font-extrabold transition-all bg-rose-600 text-white shadow-sm flex items-center justify-center gap-1';
+                    btnStandard.className = 'py-2 px-3 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800 flex items-center justify-center gap-1';
+                } else {
+                    btnStandard.className = 'py-2 px-3 rounded-lg text-xs font-extrabold transition-all bg-indigo-600 text-white shadow-sm flex items-center justify-center gap-1';
+                    btnBuzzer.className = 'py-2 px-3 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800 flex items-center justify-center gap-1';
+                }
+            }
+
+            setAnswerTimeLimit(sec) {
+                this.answerTimeLimitSec = sec;
+                [5, 8, 12].forEach(val => {
+                    const btn = document.getElementById(`timer-${val}`);
+                    if (!btn) return;
+                    if (val === sec) {
+                        btn.className = 'py-2 px-2 rounded-lg text-xs font-extrabold transition-all bg-indigo-600 text-white shadow-sm';
+                    } else {
+                        btn.className = 'py-2 px-2 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:bg-white/50 dark:hover:bg-slate-800';
+                    }
+                });
+            }
+
+            setCharSpeed(msVal) {
+                this.charIntervalMs = parseInt(msVal, 10) || 85;
+            }
+
+            setQuestionLimit(num) {
+                this.questionLimit = num;
+                const btn5 = document.getElementById('limit-5');
+                const btn8 = document.getElementById('limit-8');
+                if (num === 5) {
+                    btn5.className = 'py-2 px-2 rounded-lg text-xs font-extrabold transition-all bg-indigo-600 text-white';
+                    btn8.className = 'py-2 px-2 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800';
+                } else {
+                    btn8.className = 'py-2 px-2 rounded-lg text-xs font-extrabold transition-all bg-indigo-600 text-white';
+                    btn5.className = 'py-2 px-2 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800';
+                }
+            }
+
+            setAITopic(topic) {
+                document.getElementById('ai-topic-input').value = topic;
+            }
+
+            showToast(message, type = 'info') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                const colorClasses = type === 'warning'
+                    ? 'bg-amber-600 text-white'
+                    : type === 'error'
+                        ? 'bg-rose-600 text-white'
+                        : 'bg-slate-900 dark:bg-slate-800 text-white border border-slate-700';
+
+                toast.className = `pointer-events-auto px-4 py-3 rounded-2xl shadow-xl text-xs font-bold flex items-center justify-between gap-3 transition-all ${colorClasses}`;
+                toast.innerHTML = `<span>${message}</span>`;
+                container.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    setTimeout(() => toast.remove(), 300);
+                }, 4000);
+            }
+
+            /* ================= TIMERS & CLEANUP ================= */
+            clearAllTimers() {
+                if (this.typewriterTimer) {
+                    clearInterval(this.typewriterTimer);
+                    this.typewriterTimer = null;
+                }
+                if (this.readGraceInterval) {
+                    clearInterval(this.readGraceInterval);
+                    this.readGraceInterval = null;
+                }
+                if (this.answerCountdownInterval) {
+                    clearInterval(this.answerCountdownInterval);
+                    this.answerCountdownInterval = null;
+                }
+            }
+
+            /* ================= SPEECH SYNTHESIS (TTS) ================= */
+            speakText(text, onEndCallback = null) {
+                if (!('speechSynthesis' in window)) {
+                    if (onEndCallback) onEndCallback();
+                    return;
+                }
+
+                window.speechSynthesis.cancel();
+
+                if (!this.ttsEnabled) {
+                    if (onEndCallback) onEndCallback();
+                    return;
+                }
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ja-JP';
+                // Match speech speed slightly to character reveal speed
+                utterance.rate = this.charIntervalMs <= 65 ? 1.22 : (this.charIntervalMs >= 105 ? 0.95 : 1.08);
+                utterance.pitch = 1.0;
+
+                const voices = window.speechSynthesis.getVoices();
+                const jpVoice = voices.find(v => v.lang.includes('ja') && (v.name.includes('Google') || v.name.includes('Kyoko') || v.name.includes('Otoya')))
+                             || voices.find(v => v.lang.includes('ja'));
+                if (jpVoice) utterance.voice = jpVoice;
+
+                utterance.onend = () => {
+                    if (onEndCallback) onEndCallback();
+                };
+
+                utterance.onerror = () => {
+                    if (onEndCallback) onEndCallback();
+                };
+
+                window.speechSynthesis.speak(utterance);
+            }
+
+            speakCurrentQuestion() {
+                const currentQ = this.questions[this.currentIndex];
+                if (!currentQ) return;
+                this.stopMicListening();
+
+                if (this.quizMode === 'buzzer' && this.phase === 'reading') {
+                    // Restart progressive reveal from current or beginning
+                    this.speakText(`問題。${currentQ.q}`);
+                } else {
+                    this.speakText(`問題。${currentQ.q}`, () => {
+                        if (this.autoMicEnabled && !this.isAnswered && this.speechSupported && this.phase === 'answering') {
+                            this.startMicListening();
+                        }
+                    });
+                }
+            }
+
+            speakExplanation() {
+                const currentQ = this.questions[this.currentIndex];
+                if (!currentQ) return;
+                this.speakText(`正解は、${currentQ.answer}です。${currentQ.explanation}`);
+            }
+
+            /* ================= MICROPHONE CONTROLS ================= */
+            toggleMicListening() {
+                if (!this.speechSupported) {
+                    this.showToast('お使いのブラウザは音声認識に対応していません。テキスト入力をご利用ください。', 'warning');
+                    document.getElementById('manual-answer-input').focus();
+                    return;
+                }
+                if (this.isListening) {
+                    this.stopMicListening();
+                } else {
+                    this.startMicListening();
+                }
+            }
+
+            startMicListening() {
+                if (!this.speechSupported || this.isAnswered) return;
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                }
+                try {
+                    this.sfx.playMicStart();
+                    this.recognition.start();
+                } catch (e) {}
+            }
+
+            stopMicListening() {
+                if (!this.recognition) return;
+                try {
+                    this.recognition.stop();
+                } catch (e) {}
+                this.isListening = false;
+                this.updateMicUI(false);
+            }
+
+            updateMicUI(listening) {
+                const btn = document.getElementById('btn-mic-main');
+                const ring = document.getElementById('mic-pulse-ring');
+                const wave = document.getElementById('waveform-container');
+                const label = document.getElementById('mic-status-label');
+
+                if (listening) {
+                    btn.className = 'relative z-10 w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-xl shadow-rose-500/40 flex items-center justify-center transition-all transform scale-105 focus:outline-none';
+                    ring.classList.remove('hidden');
+                    wave.classList.add('listening');
+                    label.textContent = '🎙️ 聞き取り中... そのまま声に出して答えてください！';
+                    label.className = 'text-xs sm:text-sm font-extrabold text-rose-600 dark:text-rose-400 animate-pulse';
+                } else {
+                    btn.className = 'relative z-10 w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-xl shadow-indigo-500/30 flex items-center justify-center transition-all transform active:scale-95 focus:outline-none';
+                    ring.classList.add('hidden');
+                    wave.classList.remove('listening');
+                    label.textContent = 'マイクボタンを押して声で回答（SpaceキーでもON/OFF）';
+                    label.className = 'text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300';
+                }
+            }
+
+            updateTranscriptPreview(text) {
+                const preview = document.getElementById('speech-transcript-preview');
+                if (!text) {
+                    preview.innerHTML = '<span class="text-slate-400 dark:text-slate-600 font-normal">（待機中...）</span>';
+                } else {
+                    preview.textContent = `「${text}」`;
+                }
+            }
+
+            /* ================= QUIZ FLOW & BUZZER ENGINE ================= */
+            startBuiltInQuiz(categoryKey) {
+                const pack = BUILTIN_QUIZZES[categoryKey];
+                if (!pack) return;
+
+                const shuffled = [...pack.questions].sort(() => Math.random() - 0.5);
+                const selected = shuffled.slice(0, Math.min(this.questionLimit, shuffled.length));
+
+                this.beginQuizSession(pack.title, selected);
+            }
+
+            async generateAIQuiz() {
+                const topicInput = document.getElementById('ai-topic-input');
+                const difficultySelect = document.getElementById('ai-difficulty');
+                const topic = topicInput.value.trim() || '世界遺産と世界の地理';
+                const difficulty = difficultySelect.value;
+
+                const btn = document.getElementById('btn-generate-ai');
+                const originalHTML = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>「${topic}」のクイズをAI生成中...</span>`;
+                lucide.createIcons();
+
+                try {
+                    const generatedQuestions = await this.fetchGeminiQuiz(topic, difficulty, 5);
+                    if (generatedQuestions && generatedQuestions.length > 0) {
+                        this.beginQuizSession(`AI生成: ${topic}`, generatedQuestions);
+                    } else {
+                        this.showToast('問題の生成に失敗しました。もう一度お試しください。', 'error');
+                    }
+                } catch (err) {
+                    this.showToast('AIクイズ生成中に通信エラーが発生しました。内蔵クイズをお試しください。', 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHTML;
+                    lucide.createIcons();
+                }
+            }
+
+            async fetchGeminiQuiz(topic, difficulty, count = 5) {
+                const apiKey = "";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+                const systemInstruction = `あなたは早押し音声回答型クイズアプリの問題作成プロフェッショナルです。
+指定されたテーマと難易度に基づき、早押しクイズとして後半に向けてヒントが絞られていく良質な一問一答クイズを${count}問作成してください。
+音声認識（Web Speech API）の表記揺れを吸収するため、各問題には必ず「aliases」として、正解の漢字表記・ひらがな読み・カタカナ表記・英語や一般的な略称など5〜8個の別解リストを含めてください。`;
+
+                const userQuery = `テーマ: 「${topic}」
+難易度: ${difficulty}
+出題数: ${count}問`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: userQuery }] }],
+                    systemInstruction: { parts: [{ text: systemInstruction }] },
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    "q": { "type": "STRING", "description": "早押しに適した問題文（前半は概要、後半で核心に迫る構成）" },
+                                    "answer": { "type": "STRING", "description": "最も代表的な正解表記" },
+                                    "aliases": {
+                                        "type": "ARRAY",
+                                        "items": { "type": "STRING" },
+                                        "description": "音声認識用の別解・ひらがな読み・カタカナ・略称リスト"
+                                    },
+                                    "hint": { "type": "STRING", "description": "正解を導く短いヒント" },
+                                    "explanation": { "type": "STRING", "description": "学びが深まる80〜130文字程度の詳しい解説" }
+                                },
+                                required: ["q", "answer", "aliases", "hint", "explanation"],
+                                propertyOrdering: ["q", "answer", "aliases", "hint", "explanation"]
+                            }
+                        }
+                    }
+                };
+
+                let delay = 1000;
+                for (let attempt = 0; attempt < 4; attempt++) {
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        const result = await response.json();
+                        const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (jsonText) {
+                            return JSON.parse(jsonText);
+                        }
+                    } catch (err) {
+                        if (attempt === 3) throw err;
+                        await new Promise(r => setTimeout(r, delay));
+                        delay *= 2;
+                    }
+                }
+                return null;
+            }
+
+            beginQuizSession(title, questionsArray) {
+                this.clearAllTimers();
+                this.currentCategoryTitle = title;
+                this.questions = questionsArray;
+                this.currentIndex = 0;
+                this.score = 0;
+                this.combo = 0;
+                this.maxCombo = 0;
+                this.correctCount = 0;
+                this.history = [];
+
+                document.getElementById('view-home').classList.add('hidden');
+                document.getElementById('view-result').classList.add('hidden');
+                document.getElementById('view-quiz').classList.remove('hidden');
+
+                document.getElementById('quiz-category-badge').textContent = this.currentCategoryTitle;
+                const modePill = document.getElementById('quiz-mode-pill');
+                if (this.quizMode === 'buzzer') {
+                    modePill.textContent = `🚨 早押し (${this.answerTimeLimitSec}秒)`;
+                    modePill.className = 'px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300';
+                } else {
+                    modePill.textContent = `📖 通常モード`;
+                    modePill.className = 'px-2.5 py-1 rounded-full text-[11px] font-extrabold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300';
+                }
+
+                this.renderQuestion();
+            }
+
+            renderQuestion() {
+                this.clearAllTimers();
+                this.isAnswered = false;
+                this.speechDetectedDuringWindow = false;
+                this.stopMicListening();
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                }
+
+                const qObj = this.questions[this.currentIndex];
+                const total = this.questions.length;
+
+                // Update top bar
+                document.getElementById('quiz-progress-text').textContent = `第 ${this.currentIndex + 1} / ${total} 問`;
+                const pct = Math.round(((this.currentIndex + 1) / total) * 100);
+                document.getElementById('quiz-progress-bar').style.width = `${pct}%`;
+                document.getElementById('score-count').textContent = this.score;
+
+                const comboBadge = document.getElementById('combo-badge');
+                if (this.combo >= 2) {
+                    comboBadge.classList.remove('hidden');
+                    comboBadge.classList.add('inline-flex');
+                    document.getElementById('combo-count').textContent = this.combo;
+                } else {
+                    comboBadge.classList.add('hidden');
+                    comboBadge.classList.remove('inline-flex');
+                }
+
+                // Reset hint & panels
+                document.getElementById('hint-text').textContent = qObj.hint || 'ヒントはありません';
+                document.getElementById('hint-box').classList.add('hidden');
+                document.getElementById('read-grace-banner').classList.add('hidden');
+                document.getElementById('feedback-panel').classList.add('hidden');
+                document.getElementById('manual-answer-input').value = '';
+                this.updateTranscriptPreview('');
+
+                // Play "Ja-jan!" chime
+                this.sfx.playQuestionAppear();
+
+                if (this.quizMode === 'buzzer') {
+                    this.startBuzzerReadingPhase(qObj);
+                } else {
+                    this.startStandardModePhase(qObj);
+                }
+            }
+
+            // Buzzer Mode Phase A: Progressive character reveal + synchronized TTS
+            startBuzzerReadingPhase(qObj) {
+                this.phase = 'reading';
+                this.revealedCharCount = 0;
+                this.buzzElapsedSec = 0;
+
+                document.getElementById('question-phase-label').textContent = 'READING QUESTION... (早押し待機中)';
+                document.getElementById('question-status-dot').className = 'w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping';
+                document.getElementById('buzzer-telemetry-bar').classList.remove('hidden');
+
+                document.getElementById('buzzer-stage-area').classList.remove('hidden');
+                document.getElementById('answer-controls-area').classList.add('hidden');
+
+                const qTextEl = document.getElementById('question-text');
+                const totalChars = qObj.q.length;
+                qTextEl.innerHTML = `<span class="typewriter-caret"></span>`;
+                this.updateBuzzerTelemetry(0, totalChars, 0);
+
+                // Brief pause after chime before starting typewriter & TTS
+                setTimeout(() => {
+                    if (this.phase !== 'reading' || this.isAnswered) return;
+                    this.questionStartTimestamp = performance.now();
+
+                    // Start TTS reading the question
+                    if (this.ttsEnabled) {
+                        this.speakText(`問題。${qObj.q}`);
+                    }
+
+                    // Start progressive character reveal
+                    this.typewriterTimer = setInterval(() => {
+                        if (this.phase !== 'reading' || this.isAnswered) {
+                            clearInterval(this.typewriterTimer);
+                            return;
+                        }
+
+                        this.revealedCharCount++;
+                        const now = performance.now();
+                        this.buzzElapsedSec = (now - this.questionStartTimestamp) / 1000;
+
+                        const visibleStr = qObj.q.slice(0, this.revealedCharCount);
+                        qTextEl.innerHTML = `${this.escapeHtml(visibleStr)}<span class="typewriter-caret"></span>`;
+                        this.updateBuzzerTelemetry(this.revealedCharCount, totalChars, this.buzzElapsedSec);
+
+                        if (this.revealedCharCount >= totalChars) {
+                            clearInterval(this.typewriterTimer);
+                            this.typewriterTimer = null;
+                            qTextEl.textContent = qObj.q;
+                            this.startPostReadGraceCountdown();
+                        }
+                    }, this.charIntervalMs);
+                }, 400);
+            }
+
+            // 5-second grace period after full question is revealed if user hasn't buzzed yet
+            startPostReadGraceCountdown() {
+                if (this.phase !== 'reading' || this.isAnswered) return;
+                const banner = document.getElementById('read-grace-banner');
+                const timerEl = document.getElementById('read-grace-timer');
+                banner.classList.remove('hidden');
+
+                let graceRemainingMs = 5000;
+                timerEl.textContent = '5.0s';
+
+                this.readGraceInterval = setInterval(() => {
+                    if (this.phase !== 'reading' || this.isAnswered) {
+                        clearInterval(this.readGraceInterval);
+                        return;
+                    }
+                    graceRemainingMs -= 100;
+                    const now = performance.now();
+                    this.buzzElapsedSec = (now - this.questionStartTimestamp) / 1000;
+                    const qObj = this.questions[this.currentIndex];
+                    this.updateBuzzerTelemetry(qObj.q.length, qObj.q.length, this.buzzElapsedSec);
+
+                    if (graceRemainingMs <= 0) {
+                        clearInterval(this.readGraceInterval);
+                        banner.classList.add('hidden');
+                        this.submitAnswer('（早押し時間切れ）', true, true);
+                    } else {
+                        timerEl.textContent = `${(graceRemainingMs / 1000).toFixed(1)}s`;
+                    }
+                }, 100);
+            }
+
+            // Triggered when user presses the Buzzer Button (or Space/Enter during reading)
+            pressBuzzer() {
+                if (this.phase !== 'reading' || this.isAnswered) return;
+
+                // Stop typewriter & post-read grace timer
+                this.clearAllTimers();
+                document.getElementById('read-grace-banner').classList.add('hidden');
+
+                // Immediately halt question TTS!
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                }
+
+                // Play authentic Buzzer Hit sound ("Pi-ko-n!")
+                this.sfx.playBuzzerHit();
+
+                // Record exact buzz-in point
+                const qObj = this.questions[this.currentIndex];
+                if (this.questionStartTimestamp > 0) {
+                    this.buzzElapsedSec = (performance.now() - this.questionStartTimestamp) / 1000;
+                }
+                if (this.revealedCharCount === 0) this.revealedCharCount = 1;
+
+                // Show frozen question up to the slash point "/"
+                const visiblePart = qObj.q.slice(0, this.revealedCharCount);
+                const qTextEl = document.getElementById('question-text');
+                qTextEl.innerHTML = `${this.escapeHtml(visiblePart)} <span class="inline-block px-2 py-0.5 mx-1 rounded-lg bg-rose-600 text-white text-sm sm:text-base font-black align-middle shadow-sm">/ 早押し！</span><span class="text-slate-300 dark:text-slate-700 select-none">・・・</span>`;
+
+                this.updateBuzzerTelemetry(this.revealedCharCount, qObj.q.length, this.buzzElapsedSec);
+
+                // Transition to Answer Reception Phase with Countdown Timer
+                this.startAnswerReceptionPhase();
+            }
+
+            // Standard Mode (Full question displayed immediately)
+            startStandardModePhase(qObj) {
+                this.phase = 'answering';
+                this.revealedCharCount = qObj.q.length;
+                this.buzzElapsedSec = 0;
+
+                document.getElementById('question-phase-label').textContent = 'QUESTION (通常モード)';
+                document.getElementById('question-status-dot').className = 'w-2.5 h-2.5 rounded-full bg-indigo-500 animate-ping';
+                document.getElementById('buzzer-telemetry-bar').classList.add('hidden');
+                document.getElementById('buzzer-stage-area').classList.add('hidden');
+                document.getElementById('answer-controls-area').classList.remove('hidden');
+                document.getElementById('answer-timer-box').classList.add('hidden');
+
+                document.getElementById('question-text').textContent = qObj.q;
+
+                setTimeout(() => {
+                    this.speakCurrentQuestion();
+                }, 350);
+            }
+
+            // Phase B: Answer Reception Countdown Timer & Auto Microphone Activation
+            startAnswerReceptionPhase() {
+                this.phase = 'answering';
+                this.speechDetectedDuringWindow = false;
+
+                document.getElementById('question-phase-label').textContent = 'ANSWER NOW! (回答受付中)';
+                document.getElementById('question-status-dot').className = 'w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping';
+
+                document.getElementById('buzzer-stage-area').classList.add('hidden');
+                document.getElementById('answer-controls-area').classList.remove('hidden');
+                document.getElementById('answer-timer-box').classList.remove('hidden');
+
+                const statusEl = document.getElementById('answer-timer-status-text');
+                statusEl.textContent = '制限時間内に声またはテキストで回答してください！';
+
+                // Automatically activate microphone for hands-free voice answer
+                if (this.autoMicEnabled && this.speechSupported) {
+                    setTimeout(() => {
+                        if (this.phase === 'answering' && !this.isAnswered) {
+                            this.startMicListening();
+                        }
+                    }, 180);
+                } else {
+                    document.getElementById('manual-answer-input').focus();
+                }
+
+                // Start high-precision countdown timer
+                const totalMs = this.answerTimeLimitSec * 1000;
+                this.remainingAnswerMs = totalMs;
+                this.lastTickSecond = this.answerTimeLimitSec;
+
+                const numEl = document.getElementById('answer-countdown-number');
+                const barEl = document.getElementById('answer-countdown-bar');
+                numEl.textContent = this.answerTimeLimitSec.toFixed(1);
+                barEl.style.width = '100%';
+
+                this.answerCountdownInterval = setInterval(() => {
+                    if (this.phase !== 'answering' || this.isAnswered) {
+                        clearInterval(this.answerCountdownInterval);
+                        return;
+                    }
+
+                    this.remainingAnswerMs -= 50;
+                    if (this.remainingAnswerMs < 0) this.remainingAnswerMs = 0;
+
+                    const secLeft = this.remainingAnswerMs / 1000;
+                    numEl.textContent = secLeft.toFixed(1);
+
+                    const pct = Math.max(0, Math.min(100, (this.remainingAnswerMs / totalMs) * 100));
+                    barEl.style.width = `${pct}%`;
+
+                    // Play subtle tick sound every whole second
+                    const ceilSec = Math.ceil(secLeft);
+                    if (ceilSec < this.lastTickSecond && ceilSec > 0) {
+                        this.lastTickSecond = ceilSec;
+                        this.sfx.playCountdownTick(ceilSec <= 3);
+                    }
+
+                    if (this.remainingAnswerMs <= 0) {
+                        clearInterval(this.answerCountdownInterval);
+                        this.answerCountdownInterval = null;
+                        this.handleAnswerTimeout();
+                    }
+                }, 50);
+            }
+
+            onManualTyping() {
+                // If user is actively typing in the fallback input and timer is under 2.0s, give a tiny buffer
+                if (this.phase === 'answering' && this.remainingAnswerMs > 0 && this.remainingAnswerMs < 1800) {
+                    this.remainingAnswerMs = 1800;
+                }
+            }
+
+            handleAnswerTimeout() {
+                if (this.isAnswered) return;
+                this.stopMicListening();
+
+                // Check if user had typed something in the box before timeout
+                const manualVal = document.getElementById('manual-answer-input').value.trim();
+                if (manualVal) {
+                    this.submitAnswer(manualVal);
+                } else {
+                    this.submitAnswer('（回答時間切れ）', true, true);
+                }
+            }
+
+            updateBuzzerTelemetry(readChars, totalChars, elapsedSec) {
+                const pct = totalChars > 0 ? Math.round((readChars / totalChars) * 100) : 0;
+                document.getElementById('char-count-badge').textContent = `読まれた文字数: ${readChars} / ${totalChars}文字 (${pct}%)`;
+                document.getElementById('reading-elapsed-badge').textContent = `${elapsedSec.toFixed(2)}秒`;
+            }
+
+            escapeHtml(str) {
+                return String(str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
+            toggleHint() {
+                const hintBox = document.getElementById('hint-box');
+                hintBox.classList.toggle('hidden');
+            }
+
+            handleTextSubmit(event) {
+                event.preventDefault();
+                if (this.isAnswered) return;
+                const input = document.getElementById('manual-answer-input');
+                const val = input.value.trim();
+                if (!val) {
+                    this.showToast('回答を入力するか、マイクに向かって話してください。', 'info');
+                    return;
+                }
+                this.stopMicListening();
+                this.submitAnswer(val);
+            }
+
+            giveUpQuestion() {
+                if (this.isAnswered) return;
+                this.clearAllTimers();
+                this.stopMicListening();
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                }
+                this.submitAnswer('（パス）', true, false);
+            }
+
+            submitAnswer(userAnswer, isGiveUp = false, isTimeout = false) {
+                if (this.isAnswered) return;
+                this.isAnswered = true;
+                this.phase = 'feedback';
+                this.clearAllTimers();
+                this.stopMicListening();
+
+                const qObj = this.questions[this.currentIndex];
+                const totalChars = qObj.q.length;
+                const buzzChars = this.quizMode === 'buzzer' ? Math.min(this.revealedCharCount || totalChars, totalChars) : totalChars;
+                const buzzPct = totalChars > 0 ? Math.round((buzzChars / totalChars) * 100) : 100;
+
+                const isCorrect = !isGiveUp && !isTimeout && AnswerMatcher.isMatch(userAnswer, qObj.answer, qObj.aliases);
+
+                if (isCorrect) {
+                    this.combo++;
+                    if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+                    this.correctCount++;
+                    const comboBonus = Math.min((this.combo - 1) * 20, 100);
+                    // Early press bonus: up to +50 pts for buzzing early!
+                    const earlyBonus = this.quizMode === 'buzzer' ? Math.max(0, Math.round(((100 - buzzPct) / 100) * 50)) : 0;
+                    this.score += 100 + comboBonus + earlyBonus;
+                    this.sfx.playCorrect();
+                } else {
+                    this.combo = 0;
+                    this.sfx.playWrong();
+                }
+
+                // Reveal full question text with highlighted "/" slash marker where user buzzed in
+                const qTextEl = document.getElementById('question-text');
+                if (this.quizMode === 'buzzer' && buzzChars < totalChars && buzzChars > 0) {
+                    const readPart = this.escapeHtml(qObj.q.slice(0, buzzChars));
+                    const unreadPart = this.escapeHtml(qObj.q.slice(buzzChars));
+                    qTextEl.innerHTML = `${readPart}<span class="inline-block px-2 py-0.5 mx-1 rounded-md bg-rose-600 text-white text-xs sm:text-sm font-black align-middle">/</span><span class="text-slate-400 dark:text-slate-500">${unreadPart}</span>`;
+                } else {
+                    qTextEl.textContent = qObj.q;
+                }
+
+                // Record history
+                this.history.push({
+                    questionObj: qObj,
+                    userAnswer: userAnswer,
+                    isCorrect: isCorrect,
+                    buzzCharIndex: buzzChars,
+                    totalChars: totalChars,
+                    buzzPct: buzzPct,
+                    buzzElapsedSec: this.buzzElapsedSec,
+                    isTimeout: isTimeout
+                });
+
+                // Update score/combo UI immediately
+                document.getElementById('score-count').textContent = this.score;
+                const comboBadge = document.getElementById('combo-badge');
+                if (this.combo >= 2) {
+                    comboBadge.classList.remove('hidden');
+                    comboBadge.classList.add('inline-flex');
+                    document.getElementById('combo-count').textContent = this.combo;
+                } else {
+                    comboBadge.classList.add('hidden');
+                    comboBadge.classList.remove('inline-flex');
+                }
+
+                // Show Feedback Panel
+                this.renderFeedbackPanel(qObj, userAnswer, isCorrect, buzzChars, totalChars, buzzPct, isTimeout);
+            }
+
+            renderFeedbackPanel(qObj, userAnswer, isCorrect, buzzChars, totalChars, buzzPct, isTimeout) {
+                document.getElementById('buzzer-stage-area').classList.add('hidden');
+                document.getElementById('answer-controls-area').classList.add('hidden');
+                document.getElementById('read-grace-banner').classList.add('hidden');
+
+                const panel = document.getElementById('feedback-panel');
+                panel.classList.remove('hidden');
+
+                const iconBox = document.getElementById('feedback-icon-box');
+                const title = document.getElementById('feedback-title');
+                const buzzStatsEl = document.getElementById('feedback-buzz-stats');
+
+                if (this.quizMode === 'buzzer') {
+                    buzzStatsEl.classList.remove('hidden');
+                    buzzStatsEl.textContent = `早押し地点: ${buzzChars}/${totalChars}文字 (${buzzPct}%・${this.buzzElapsedSec.toFixed(2)}秒)`;
+                } else {
+                    buzzStatsEl.classList.add('hidden');
+                }
+
+                if (isCorrect) {
+                    panel.className = 'rounded-2xl p-5 sm:p-6 border-2 transition-all space-y-4 bg-emerald-50/70 dark:bg-emerald-950/30 border-emerald-400 dark:border-emerald-700';
+                    iconBox.className = 'w-12 h-12 rounded-2xl flex items-center justify-center bg-emerald-500 text-white font-black text-2xl shrink-0 shadow-md shadow-emerald-500/30';
+                    iconBox.textContent = '◎';
+                    title.className = 'text-lg sm:text-xl font-black text-emerald-700 dark:text-emerald-300';
+                    title.textContent = this.combo >= 2 ? `早押し大正解！ (${this.combo}連続コンボ！)` : '正解！ピンポン！';
+                } else {
+                    panel.className = 'rounded-2xl p-5 sm:p-6 border-2 transition-all space-y-4 bg-rose-50/70 dark:bg-rose-950/30 border-rose-400 dark:border-rose-700';
+                    iconBox.className = 'w-12 h-12 rounded-2xl flex items-center justify-center bg-rose-500 text-white font-black text-2xl shrink-0 shadow-md shadow-rose-500/30';
+                    iconBox.textContent = '×';
+                    title.className = 'text-lg sm:text-xl font-black text-rose-700 dark:text-rose-300';
+                    if (isTimeout) {
+                        title.textContent = '時間切れ！ブブー！';
+                    } else if (userAnswer === '（パス）') {
+                        title.textContent = 'パスしました';
+                    } else {
+                        title.textContent = '残念、不正解...';
+                    }
+                }
+
+                document.getElementById('feedback-user-answer').textContent = userAnswer;
+                document.getElementById('feedback-correct-answer').textContent = qObj.answer;
+                document.getElementById('feedback-explanation').textContent = qObj.explanation;
+
+                // Render aliases chips
+                const aliasesContainer = document.getElementById('feedback-aliases');
+                aliasesContainer.innerHTML = '';
+                (qObj.aliases || [qObj.answer]).forEach(alias => {
+                    const span = document.createElement('span');
+                    span.className = 'px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-[11px] font-medium';
+                    span.textContent = alias;
+                    aliasesContainer.appendChild(span);
+                });
+
+                const nextLabel = document.getElementById('btn-next-label');
+                nextLabel.textContent = (this.currentIndex + 1 < this.questions.length) ? '次の問題へ (Enter / Space)' : '結果発表を見る (Enter / Space)';
+
+                // Speak result & explanation if TTS is ON
+                setTimeout(() => {
+                    if (this.phase !== 'feedback') return;
+                    const prefix = isCorrect ? '正解！' : `正解は、${qObj.answer}、でした。`;
+                    this.speakText(`${prefix} ${qObj.explanation}`);
+                }, 550);
+            }
+
+            nextQuestion() {
+                this.clearAllTimers();
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                }
+
+                if (this.currentIndex + 1 < this.questions.length) {
+                    this.currentIndex++;
+                    this.renderQuestion();
+                } else {
+                    this.showResults();
+                }
+            }
+
+            /* ================= RESULTS & REVIEW ================= */
+            showResults() {
+                this.clearAllTimers();
+                this.stopMicListening();
+                document.getElementById('view-quiz').classList.add('hidden');
+                document.getElementById('view-result').classList.remove('hidden');
+
+                this.sfx.playFanfare();
+
+                const total = this.questions.length;
+                const pct = Math.round((this.correctCount / total) * 100);
+                const avgBuzzPct = total > 0
+                    ? Math.round(this.history.reduce((acc, item) => acc + (item.buzzPct || 100), 0) / total)
+                    : 100;
+
+                document.getElementById('result-category-label').textContent = this.currentCategoryTitle;
+                document.getElementById('result-score').textContent = this.score;
+                document.getElementById('result-accuracy').textContent = `${this.correctCount} / ${total}`;
+                document.getElementById('result-max-combo').textContent = this.maxCombo;
+                document.getElementById('result-percent').textContent = `${pct}%`;
+                document.getElementById('result-avg-buzz').textContent = this.quizMode === 'buzzer' ? `${avgBuzzPct}%` : '全文';
+
+                let rankTitle = '';
+                if (pct === 100 && avgBuzzPct <= 60) {
+                    rankTitle = '⚡ 神速の早押しクイズ王！完全制覇！';
+                } else if (pct === 100) {
+                    rankTitle = '🏆 パーフェクト！完全制覇マスター！';
+                } else if (pct >= 80) {
+                    rankTitle = '✨ 素晴らしい！あと一歩で満点！';
+                } else if (pct >= 60) {
+                    rankTitle = '👍 ナイスファイト！合格圏内です！';
+                } else {
+                    rankTitle = '📚 伸びしろ十分！解説を読んで復習しよう！';
+                }
+                document.getElementById('result-rank-title').textContent = rankTitle;
+
+                const wrongCount = this.history.filter(h => !h.isCorrect).length;
+                const retryWrongBtn = document.getElementById('btn-retry-wrong');
+                if (wrongCount > 0) {
+                    retryWrongBtn.classList.remove('hidden');
+                    retryWrongBtn.querySelector('span').textContent = `間違えた問題だけ復習 (${wrongCount}問)`;
+                } else {
+                    retryWrongBtn.classList.add('hidden');
+                }
+
+                // Render Review Cards with "/" slash point indicator
+                const container = document.getElementById('review-list-container');
+                container.innerHTML = '';
+
+                this.history.forEach((item, idx) => {
+                    const card = document.createElement('div');
+                    const statusBadge = item.isCorrect
+                        ? '<span class="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300 text-xs font-extrabold">◎ 正解</span>'
+                        : '<span class="px-2.5 py-1 rounded-lg bg-rose-100 text-rose-800 dark:bg-rose-900/50 dark:text-rose-300 text-xs font-extrabold">× 不正解</span>';
+
+                    const buzzBadge = this.quizMode === 'buzzer'
+                        ? `<span class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold">早押し: ${item.buzzCharIndex}/${item.totalChars}文字 (${item.buzzPct}%)</span>`
+                        : '';
+
+                    let formattedQ = this.escapeHtml(item.questionObj.q);
+                    if (this.quizMode === 'buzzer' && item.buzzCharIndex < item.totalChars && item.buzzCharIndex > 0) {
+                        const rPart = this.escapeHtml(item.questionObj.q.slice(0, item.buzzCharIndex));
+                        const uPart = this.escapeHtml(item.questionObj.q.slice(item.buzzCharIndex));
+                        formattedQ = `${rPart}<span class="inline-block px-1.5 py-0.2 mx-1 rounded bg-rose-600 text-white text-xs font-black">/</span><span class="text-slate-400 dark:text-slate-500">${uPart}</span>`;
+                    }
+
+                    card.className = 'p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3';
+                    card.innerHTML = `
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-black px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Q${idx + 1}</span>
+                                ${statusBadge}
+                                ${buzzBadge}
+                            </div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400">
+                                あなたの回答: <strong class="text-slate-800 dark:text-slate-200">${this.escapeHtml(item.userAnswer)}</strong>
+                            </div>
+                        </div>
+                        <p class="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 leading-relaxed">${formattedQ}</p>
+                        <div class="flex flex-wrap items-center gap-2 pt-1">
+                            <span class="text-xs font-bold text-slate-400">正解:</span>
+                            <span class="text-sm font-extrabold text-indigo-600 dark:text-indigo-400">${this.escapeHtml(item.questionObj.answer)}</span>
+                        </div>
+                        <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-800/60 leading-relaxed">
+                            ${this.escapeHtml(item.questionObj.explanation)}
+                        </p>
+                    `;
+                    container.appendChild(card);
+                });
+            }
+
+            retryCurrentQuiz() {
+                const shuffled = [...this.questions].sort(() => Math.random() - 0.5);
+                this.beginQuizSession(this.currentCategoryTitle, shuffled);
+            }
+
+            retryWrongQuestions() {
+                const wrongQuestions = this.history.filter(h => !h.isCorrect).map(h => h.questionObj);
+                if (wrongQuestions.length === 0) return;
+                this.beginQuizSession(`${this.currentCategoryTitle} (復習)`, wrongQuestions);
+            }
+
+            showHomeConfirm() {
+                const quizViewVisible = !document.getElementById('view-quiz').classList.contains('hidden');
+                if (quizViewVisible) {
+                    document.getElementById('modal-overlay').classList.remove('hidden');
+                } else {
+                    this.goHome();
+                }
+            }
+
+            closeModal() {
+                document.getElementById('modal-overlay').classList.add('hidden');
+            }
+
+            confirmGoHome() {
+                this.closeModal();
+                this.goHome();
+            }
+
+            goHome() {
+                this.clearAllTimers();
+                this.stopMicListening();
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                }
+                document.getElementById('view-quiz').classList.add('hidden');
+                document.getElementById('view-result').classList.add('hidden');
+                document.getElementById('view-home').classList.remove('hidden');
+            }
+        }
+
+        // Initialize application when DOM is ready
+        let app;
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            app = new VoiceQuizApp();
+        });
+    </script>
+</body>
+</html>

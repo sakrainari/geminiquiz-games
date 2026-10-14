@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>音声早押しクイズ 初期試作（v0.1）</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; padding: 24px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans CJK JP", sans-serif;
+      background: var(--bg); color: var(--text);
+      line-height: 1.6;
+    }
+    .container {
+      max-width: 840px; margin: 0 auto;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 12px; padding: 28px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    }
+    h1 { margin: 0 0 8px 0; font-size: 1.5rem; }
+    h2 { margin: 0 0 16px 0; font-size: 1.25rem; border-bottom: 2px solid var(--border); padding-bottom: 8px; }
+    h3 { margin: 16px 0 8px 0; font-size: 1.05rem; }
+    .screen { display: none; }
+    .screen.active { display: block; }
+    
+    /* ボタン・入力系 */
+    button {
+      cursor: pointer; font-size: 1rem; font-weight: 600;
+      padding: 10px 20px; border-radius: 8px; border: 1px solid transparent;
+      background: var(--primary); color: #fff; transition: 0.15s;
+    }
+    button:hover:not(:disabled) { background: var(--primary-hover); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button.secondary { background: #fff; color: var(--text); border-color: var(--border); }
+    button.secondary:hover:not(:disabled) { background: #f1f5f9; }
+    button.danger { background: var(--danger); color: #fff; }
+    button.buzzer {
+      width: 100%; padding: 20px; font-size: 1.4rem;
+      background: var(--danger); border-radius: 12px;
+      box-shadow: 0 4px 0 #991b1b; margin: 16px 0;
+    }
+    button.buzzer:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 0 #991b1b; }
+
+    /* パネル・ボックス */
+    .card {
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 16px; margin-bottom: 16px; background: #fcfcfd;
+    }
+    .status-badge {
+      display: inline-block; padding: 4px 10px; border-radius: 999px;
+      font-size: 0.85rem; font-weight: 600; background: #e2e8f0; color: var(--text);
+    }
+    .status-badge.ok { background: #dcfce7; color: #166534; }
+    .status-badge.warn { background: #fef3c7; color: #92400e; }
+    .status-badge.ng { background: #fee2e2; color: #991b1b; }
+
+    /* クイズ画面 */
+    .quiz-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border);
+    }
+    .question-box {
+      font-size: 1.35rem; font-weight: 600; min-height: 110px;
+      padding: 20px; background: #f8fafc; border-radius: 8px;
+      border: 1px solid var(--border); margin-bottom: 16px;
+    }
+    .slash-mark { color: var(--danger); font-weight: 800; padding: 0 2px; }
+    .timer-bar-wrap {
+      width: 100%; height: 10px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin: 8px 0 16px;
+    }
+    .timer-bar { height: 100%; background: var(--primary); width: 100%; transition: width 0.1s linear; }
+    .mic-monitor {
+      padding: 14px; border-radius: 8px; border: 2px dashed var(--border);
+      background: #fff; margin-bottom: 16px;
+    }
+    .mic-monitor.listening { border-color: var(--primary); background: #eff6ff; }
+    
+    /* 結果・リザルト */
+    .result-banner {
+      padding: 12px 16px; border-radius: 8px; font-weight: 700; font-size: 1.2rem; margin-bottom: 12px;
+    }
+    .result-banner.correct { background: #dcfce7; color: #166534; }
+    .result-banner.wrong { background: #fee2e2; color: #991b1b; }
+    .result-banner.retry { background: #fef3c7; color: #92400e; }
+    
+    .meta-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; margin-top: 8px; }
+    .meta-table th, .meta-table td {
+      border: 1px solid var(--border); padding: 8px 12px; text-align: left;
+    }
+    .meta-table th { background: #f1f5f9; width: 28%; }
+
+    .flex-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .text-muted { color: var(--muted); font-size: 0.9rem; }
+    
+    /* モーダル */
+    .modal-backdrop {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+      align-items: center; justify-content: center; padding: 16px; z-index: 100;
+    }
+    .modal-backdrop.active { display: flex; }
+    .modal {
+      background: #fff; max-width: 560px; width: 100%; border-radius: 12px;
+      padding: 24px; max-height: 90vh; overflow-y: auto;
+    }
+    input[type="text"], textarea {
+      width: 100%; padding: 8px 12px; border: 1px solid var(--border);
+      border-radius: 6px; font-size: 1rem; margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>音声早押しクイズ 試作版 (v0.1)</h1>
+
+  <!-- ==================== 1. 開始・設定・マイク確認画面 ==================== -->
+  <div id="screen-setup" class="screen active">
+    <p class="text-muted">ゲーム開始前にプレイ設定を選び、マイクの認識テストを行ってください。</p>
+
+    <div class="card">
+      <h2>1. プレイ設定</h2>
+      <div style="margin-bottom: 12px;">
+        <strong>進行モード：</strong><br>
+        <label><input type="radio" name="prog-mode" value="continuous" checked> 連続モード（判定後3秒で次の問題へ／一時停止あり）</label><br>
+        <label><input type="radio" name="prog-mode" value="slow"> ゆっくりモード（判定後「次へ」を押して進む）</label>
+      </div>
+      <div>
+        <strong>早押し待機時間（全文表示後）：</strong><br>
+        <label><input type="radio" name="wait-mode" value="normal" checked> 通常待機（全文表示後10秒待つ）</label><br>
+        <label><input type="radio" name="wait-mode" value="unlimited"> テスト用待機（無制限に待つ）</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>2. マイクと音声認識の確認（必須）</h2>
+      <p class="text-muted">本番と同じ音声認識の仕組みで文字が取得できるか確認します。「マイクを確認する」を押し、「テスト」や「こんにちは」など短い言葉を話してください。</p>
+      
+      <div class="flex-row" style="margin-bottom: 12px;">
+        <button id="btn-mic-test" type="button">マイクを確認する</button>
+        <span id="mic-test-status" class="status-badge">未確認</span>
+      </div>
+
+      <div class="mic-monitor" id="mic-test-box">
+        <div><strong>認識された文字：</strong> <span id="mic-test-transcript" class="text-muted">（ここに認識結果が表示されます）</span></div>
+        <div id="mic-test-error" style="color: var(--danger); font-size: 0.9rem; margin-top: 4px;"></div>
+      </div>
+
+      <details style="margin-top: 12px;">
+        <summary class="text-muted" style="cursor: pointer;">マイクが使えない環境・手動入力で判定テストを行う場合</summary>
+        <div style="padding-top: 8px;">
+          <label><input type="checkbox" id="chk-manual-mode"> 音声認識の代わりにテキスト入力で回答をシミュレートする（テスト用）</label>
+        </div>
+      </details>
+    </div>
+
+    <div class="flex-row" style="justify-content: flex-end;">
+      <button id="btn-start-game" type="button" disabled>確認完了してクイズを始める（全10問）</button>
+    </div>
+  </div>
+
+  <!-- ==================== 2. 出題・回答画面 ==================== -->
+  <div id="screen-quiz" class="screen">
+    <div class="quiz-header">
+      <div>
+        <span class="status-badge" id="quiz-qnum">第1問 / 10</span>
+        <span class="status-badge" id="quiz-theme">テーマ</span>
+      </div>
+      <div class="flex-row">
+        <strong>得点: <span id="quiz-score">0</span> pt</strong>
+        <button id="btn-pause" class="secondary" type="button" style="padding: 6px 12px; font-size: 0.9rem;">一時停止</button>
+      </div>
+    </div>
+
+    <div id="pause-notice" class="result-banner retry" style="display: none;">
+      一時停止中（再開ボタンを押すと進行します）
+    </div>
+
+    <!-- 問題文表示領域 -->
+    <div class="question-box" id="question-display"></div>
+
+    <!-- 状態とタイマー -->
+    <div class="flex-row" style="justify-content: space-between;">
+      <strong id="phase-label">出題中...</strong>
+      <span id="timer-label">-- 秒</span>
+    </div>
+    <div class="timer-bar-wrap">
+      <div class="timer-bar" id="timer-bar"></div>
+    </div>
+
+    <!-- 早押しボタン -->
+    <button id="btn-buzzer" class="buzzer" type="button">早押しして答える (Space / Enter)</button>
+
+    <!-- 音声回答モニタ -->
+    <div class="mic-monitor" id="answer-mic-box" style="display: none;">
+      <div id="retry-prompt" style="color: var(--warning); font-weight: 700; margin-bottom: 6px; display: none;"></div>
+      <div><strong>認識中の文字：</strong> <span id="live-transcript">...</span></div>
+      <div class="text-muted" style="font-size: 0.85rem; margin-top: 4px;">※話し終えると自動で判定します（制限時間8秒）</div>
+      
+      <!-- テスト用手動入力欄 -->
+      <div id="manual-input-area" style="display: none; margin-top: 10px;">
+        <div class="flex-row">
+          <input type="text" id="manual-answer-input" placeholder="発話をシミュレート（例：えーと、富士山！）" style="flex: 1;">
+          <button id="btn-manual-submit" type="button">発言確定</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 各問の結果表示パネル -->
+    <div id="round-result-box" class="card" style="display: none;">
+      <div id="round-result-banner" class="result-banner"></div>
+      <table class="meta-table">
+        <tr><th>正解</th><td><strong id="res-correct-answer"></strong> （<span id="res-reading"></span>）</td></tr>
+        <tr><th>認識された発言</th><td id="res-raw-transcript"></td></tr>
+        <tr><th>判定に用いた回答部分</th><td id="res-extracted"></td></tr>
+        <tr><th>判定・終了理由</th><td id="res-reason"></td></tr>
+        <tr><th>解説</th><td id="res-explanation"></td></tr>
+      </table>
+      <div class="flex-row" style="justify-content: space-between; margin-top: 16px;">
+        <span id="auto-next-label" class="text-muted"></span>
+        <button id="btn-next-question" type="button">次の問題へ (Enter)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 3. 全問終了リザルト画面 ==================== -->
+  <div id="screen-result" class="screen">
+    <h2>全問終了 リザルト</h2>
+    <div class="card flex-row" style="justify-content: space-between;">
+      <div style="font-size: 1.4rem; font-weight: 700;">
+        合計得点：<span id="final-score">0</span> / 10 pt
+      </div>
+      <div class="flex-row">
+        <button id="btn-export-reports" class="secondary" type="button">誤判定報告をJSON書き出し (<span id="report-count">0</span>件)</button>
+        <button id="btn-restart" type="button">設定画面に戻る</button>
+      </div>
+    </div>
+    <p class="text-muted">※誤判定報告はブラウザ内（LocalStorage）に保存されます。ブラウザのデータ削除で記録が消えるため、必要に応じてJSON書き出しを行ってください。</p>
+
+    <div id="result-list"></div>
+  </div>
+</div>
+
+<!-- ==================== 誤判定報告モーダル ==================== -->
+<div id="modal-report" class="modal-backdrop">
+  <div class="modal">
+    <h3>誤判定の報告・記録</h3>
+    <p class="text-muted" style="margin-top: 0;">判定改善のため、実際に話した答えと状況をご記入ください。</p>
+    <div style="font-size: 0.9rem; margin-bottom: 12px; background: #f8fafc; padding: 10px; border-radius: 6px;">
+      <div><strong>問題：</strong><span id="rep-q-text"></span></div>
+      <div><strong>認識結果：</strong><span id="rep-raw"></span></div>
+      <div><strong>判定理由：</strong><span id="rep-reason"></span></div>
+    </div>
+    <div style="margin-bottom: 12px;">
+      <label><strong>報告の種類：</strong></label>
+      <select id="rep-type" style="width: 100%; padding: 8px; margin-top: 4px; border-radius: 6px; border: 1px solid var(--border);">
+        <option value="false_negative">正しく答えたのに通らなかった</option>
+        <option value="false_positive">違う答えが正解になった</option>
+        <option value="retry_issue">聞き返しの基準・動作に違和感がある</option>
+        <option value="other">その他</option>
+      </select>
+    </div>
+    <div style="margin-bottom: 12px;">
+      <label><strong>実際に言った答え（必須）：</strong></label>
+      <input type="text" id="rep-actual-spoken" placeholder="例：ふじさん">
+    </div>
+    <div style="margin-bottom: 16px;">
+      <label><strong>補足コメント（任意）：</strong></label>
+      <textarea id="rep-notes" rows="3" placeholder="例：語尾に「です」をつけたら不一致になった、など"></textarea>
+    </div>
+    <div id="rep-save-msg" style="color: var(--danger); margin-bottom: 8px; font-size: 0.9rem;"></div>
+    <div class="flex-row" style="justify-content: flex-end;">
+      <button type="button" class="secondary" id="btn-close-modal">キャンセル</button>
+      <button type="button" id="btn-save-report">報告を保存する</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/**
+ * ============================================================================
+ * 1. サンプル問題データ（10問）
+ * 仕様書セクション5に基づき、許容表記・聞き返し候補・混同注意の別解を保持
+ * ============================================================================
+ */
+const QUESTION_POOL = [
+  {
+    id: "q_001", theme: "日本地理",
+    question: "日本で最も高い山で、標高が約3,776メートルある山は何でしょう？",
+    answer_display: "富士山", reading: "ふじさん",
+    acceptable_matches: ["富士山", "ふじさん", "フジサン", "不二山"],
+    retry_matches: ["ふじ", "ふじやま", "ふじざん"],
+    ng_matches: ["北岳", "きただけ", "エベレスト", "高尾山"],
+    explanation: "山梨県と静岡県に跨る活火山で、2013年に世界文化遺産に登録されました。",
+    source_status: "verified"
+  },
+  {
+    id: "q_002", theme: "世界地理",
+    question: "シドニーやメルボルンといった大都市がある、オーストラリア連邦の首都はどこでしょう？",
+    answer_display: "キャンベラ", reading: "きゃんべら",
+    acceptable_matches: ["キャンベラ", "きゃんべら", "Canberra"],
+    retry_matches: ["きゃんべら市", "きゃんばら", "かんべら"],
+    ng_matches: ["シドニー", "しどにー", "メルボルン", "めるぼるん", "パース"],
+    explanation: "シドニーとメルボルンの双方が首都の座を争ったため、両都市の中間地点に計画都市キャンベラが建設されました。",
+    source_status: "verified"
+  },
+  {
+    id: "q_003", theme: "理科・宇宙",
+    question: "太陽系の惑星の中で、最も大きい惑星は何でしょう？",
+    answer_display: "木星", reading: "もくせい",
+    acceptable_matches: ["木星", "もくせい", "モクセイ", "ジュピター"],
+    retry_matches: ["もくせ", "ぼくせい"],
+    ng_matches: ["土星", "どせい", "地球", "ちきゅう", "火星", "かせい", "海王星", "天王星", "金星", "水星"],
+    explanation: "直径が地球の約11倍ある巨大なガス惑星です。",
+    source_status: "verified"
+  },
+  {
+    id: "q_004", theme: "日本史",
+    question: "1192年や1185年などの成立年が知られる、源頼朝が鎌倉に開いた武家政権を何というでしょう？",
+    answer_display: "鎌倉幕府", reading: "かまくらばくふ",
+    acceptable_matches: ["鎌倉幕府", "かまくらばくふ", "カマクラバクフ"],
+    retry_matches: ["かまくら", "鎌倉", "ばくふ"],
+    ng_matches: ["室町幕府", "むろまちばくふ", "江戸幕府", "えどばくふ", "平安京"],
+    explanation: "源頼朝が征夷大将軍に任じられ、鎌倉を拠点とした武家政権を確立しました。",
+    source_status: "verified"
+  },
+  {
+    id: "q_005", theme: "文学",
+    question: "「吾輩は猫である。名前はまだ無い。」という書き出しで始まる小説を書いた日本の文豪は誰でしょう？",
+    answer_display: "夏目漱石", reading: "なつめそうせき",
+    acceptable_matches: ["夏目漱石", "なつめそうせき", "ナツメソウセキ", "夏目金之助"],
+    retry_matches: ["なつめ", "夏目", "そうせき", "漱石"],
+    ng_matches: ["芥川龍之介", "あくたがわりゅうのすけ", "太宰治", "だざいおさむ", "森鴎外", "宮沢賢治"],
+    explanation: "1905年に発表された夏目漱石の処女長編小説です。",
+    source_status: "verified"
+  },
+  {
+    id: "q_006", theme: "化学",
+    question: "元素記号「H」で表される、宇宙で最も多く存在する最も軽い元素は何でしょう？",
+    answer_display: "水素", reading: "すいそ",
+    acceptable_matches: ["水素", "すいそ", "スイソ"],
+    retry_matches: ["すいそう", "すいそげんそ"],
+    ng_matches: ["酸素", "さんそ", "ヘリウム", "へりうむ", "窒素", "ちっそ", "炭素", "たんそ"],
+    explanation: "原子番号1番の元素で、水（H2O）の構成要素でもあります。",
+    source_status: "verified"
+  },
+  {
+    id: "q_007", theme: "公民",
+    question: "日本国憲法における三大義務とは、「教育を受けさせる義務」「勤労の義務」と、もう一つは何の義務でしょう？",
+    answer_display: "納税の義務", reading: "のうぜいのぎむ",
+    acceptable_matches: ["納税の義務", "のうぜいのぎむ", "納税", "のうぜい", "税金を納める義務"],
+    retry_matches: ["税金", "ぜいきん", "のうぜいする"],
+    ng_matches: ["参政権", "兵役の義務", "選挙の義務"],
+    explanation: "日本国憲法第30条に「国民は、法律の定めるところにより、納税の義務を負ふ」と定められています。",
+    source_status: "verified"
+  },
+  {
+    id: "q_008", theme: "世界遺産・建築",
+    question: "1889年のパリ万国博覧会に合わせて建設された、フランスの首都パリを象徴する高さ約300メートルの鉄塔は何でしょう？",
+    answer_display: "エッフェル塔", reading: "えっふぇるとう",
+    acceptable_matches: ["エッフェル塔", "えっふぇるとう", "エッフェルトウ", "エッフェル"],
+    retry_matches: ["えっふぇる", "えっへるとう", "えふぇるとう"],
+    ng_matches: ["東京タワー", "凱旋門", "がいせんもん", "ルーヴル美術館", "ピサの斜塔"],
+    explanation: "設計者ギュスターヴ・エッフェルの名前にちなんで名付けられました。",
+    source_status: "verified"
+  },
+  {
+    id: "q_009", theme: "生物",
+    question: "植物が光のエネルギーを使って、水と二酸化炭素からデンプンなどの養分と酸素を作り出す働きを何というでしょう？",
+    answer_display: "光合成", reading: "こうごうせい",
+    acceptable_matches: ["光合成", "こうごうせい", "コウゴウセイ"],
+    retry_matches: ["こうごうせ", "こごうせい"],
+    ng_matches: ["呼吸", "こきゅう", "蒸散", "じょうさん", "発芽"],
+    explanation: "葉緑体で行われる反応で、地球上の生態系と酸素供給を支えています。",
+    source_status: "verified"
+  },
+  {
+    id: "q_010", theme: "スポーツ・文化",
+    question: "4年に1度開催される近代オリンピックの第1回大会が、1896年に開かれた都市はどこでしょう？",
+    answer_display: "アテネ", reading: "あてね",
+    acceptable_matches: ["アテネ", "あてね", "Athens"],
+    retry_matches: ["あてね市", "あてな", "ギリシャ", "ぎりしゃ"],
+    ng_matches: ["パリ", "ぱり", "ロンドン", "ろんどん", "ローマ", "オリンピア"],
+    explanation: "古代オリンピック発祥の地であるギリシャの首都アテネで第1回大会が開催されました（国名「ギリシャ」で答えた場合は都市名を聞き返します）。",
+    source_status: "verified"
+  }
+];
+
+/**
+ * ============================================================================
+ * 2. 独立した回答判定エンジン (JudgeEngine)
+ * 仕様書セクション4および8に基づき、DOMやマイクから完全に切り離して動作
+ * ============================================================================
+ */
+const JudgeEngine = {
+  // カタカナをひらがなに統一し、記号や空白を除去
+  toNormalizedHiragana(str) {
+    if (!str) return "";
+    return str
+      .trim()
+      .replace(/[Ａ-Ｚａ-ｚ０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+      .replace(/[\u30a1-\u30f6]/g, m => String.fromCharCode(m.charCodeAt(0) - 0x60))
+      .replace(/[、。！？!?\s「」『』（）()・…ー-]/g, "");
+  },
+
+  // レーベンシュタイン距離（編集距離）の計算
+  levenshtein(a, b) {
+    const matrix = Array.from({ length: a.length + 1 }, (_, i) => [i]);
+    for (let j = 1; j <= b.length; j++) matrix[0][j] = j;
+    for (let i = 1; i <= a.length; i++) {
+      for (let j = 1; j <= b.length; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j - 1] + cost
+        );
+      }
+    }
+    return matrix[a.length][b.length];
+  },
+
+  /**
+   * 発言から前置き・どもり・言い直しを整理して回答部分を抽出する
+   */
+  extractCandidate(rawTranscript) {
+    if (!rawTranscript || !rawTranscript.trim()) {
+      return { extracted: "", isMultipleOrUncertain: false, wasCorrected: false };
+    }
+
+    let text = rawTranscript.trim();
+
+    // 1. 明確な言い直し（訂正）の検出：「キャンベラ……あ、シドニー」→ 最後の「シドニー」を採用
+    const correctionSplitters = /(?:じゃなくて|ではなくて|ではなく|じゃなく|やっぱり|いや、|いや |あ、|あ |違った、|違った |まちがえた、)/g;
+    let wasCorrected = false;
+    if (correctionSplitters.test(text)) {
+      const parts = text.split(correctionSplitters).map(s => s.trim()).filter(Boolean);
+      if (parts.length >= 2) {
+        text = parts[parts.length - 1];
+        wasCorrected = true;
+      }
+    }
+
+    // 2. 前置き（フィラー）の除去
+    const fillerPattern = /^(?:えーっと|えーと|えっと|あーっと|あー|うーんと|うーん|あのー|あの|そのー|答えは|こたえは|たぶん|おそらく|きっと|えー)+[\s、。]*/;
+    while (fillerPattern.test(text)) {
+      text = text.replace(fillerPattern, "").trim();
+    }
+
+    // 3. 語尾の除去（「です」「ます」「かな」など）
+    const suffixPattern = /(?:です|ます|だ|かな|かなぁ|でしょうか|ですか|だと思う|だと思います|にします)[。！？!?\s]*$/;
+    text = text.replace(suffixPattern, "").trim();
+
+    // 4. 複数候補（「AかB」「AまたはB」）の検出
+    const multiplePattern = /(.+)(?:か|または|もしくは|あるいは)(.+)/;
+    let isMultipleOrUncertain = false;
+    const multiMatch = text.match(multiplePattern);
+    if (multiMatch && multiMatch[1].length >= 2 && multiMatch[2].length >= 2) {
+      isMultipleOrUncertain = true;
+    }
+
+    // 5. どもり（先頭1〜2文字の繰り返し「ふ、ふじさん」）の簡易正規化
+    text = text.replace(/^([ぁ-んァ-ヶ]{1,2})[、\s]+\1/, "$1");
+
+    return {
+      extracted: text,
+      isMultipleOrUncertain,
+      wasCorrected
+    };
+  },
+
+  /**
+   * 判定メイン関数
+   * @param {string} rawTranscript 認識された全文
+   * @param {object} question 問題オブジェクト
+   * @param {boolean} isRetry 再回答（2回目）かどうか
+   * @returns {object} { status: 'CORRECT'|'WRONG'|'RETRY', extracted, reason }
+   */
+  evaluate(rawTranscript, question, isRetry = false) {
+    if (!rawTranscript || !rawTranscript.trim()) {
+      return {
+        status: "WRONG",
+        extracted: "（なし）",
+        reason: "音声認識から文字を取得できませんでした"
+      };
+    }
+
+    const { extracted, isMultipleOrUncertain } = this.extractCandidate(rawTranscript);
+
+    // 複数候補（「キャンベラかシドニー」など）で特定できない場合
+    if (isMultipleOrUncertain) {
+      if (!isRetry) {
+        return {
+          status: "RETRY",
+          extracted,
+          reason: "回答候補を一つに特定できません。答えを一つに絞ってください"
+        };
+      } else {
+        return {
+          status: "WRONG",
+          extracted,
+          reason: "再回答でも回答候補を一つに特定できませんでした"
+        };
+      }
+    }
+
+    const normExtracted = this.toNormalizedHiragana(extracted);
+    const normRaw = this.toNormalizedHiragana(rawTranscript);
+    const normReading = this.toNormalizedHiragana(question.reading);
+
+    // 1. 正解および許容表記との照合
+    const exactStandards = [question.answer_display, question.reading];
+    for (const acc of question.acceptable_matches) {
+      if (extracted === acc || this.toNormalizedHiragana(acc) === normExtracted) {
+        const isExact = exactStandards.includes(extracted);
+        return {
+          status: "CORRECT",
+          extracted,
+          reason: isExact
+            ? "登録された正解表記と一致しました"
+            : "許容されている別表記・読みとして正解と判定しました"
+        };
+      }
+    }
+
+    // Web Speech APIが「キャンベラあシドニー」のようにスペース無しで繋げた場合の救済：
+    // 訂正ワード＋正解が末尾にあるかチェック
+    const inlineCorrMatch = normRaw.match(/(?:じゃなくて|やっぱり|いや|あ)(.+)$/);
+    if (inlineCorrMatch) {
+      const tail = inlineCorrMatch[1];
+      for (const acc of question.acceptable_matches) {
+        if (this.toNormalizedHiragana(acc) === tail) {
+          return {
+            status: "CORRECT",
+            extracted: tail,
+            reason: "言い直し後の最終回答が正解表記と一致しました"
+          };
+        }
+      }
+    }
+
+    // 2. 混同してはいけない別の答え（NG候補）との一致チェック → 即誤答
+    for (const ng of question.ng_matches || []) {
+      if (extracted === ng || this.toNormalizedHiragana(ng) === normExtracted) {
+        return {
+          status: "WRONG",
+          extracted,
+          reason: "認識された回答が、正解とは別の言葉（混同注意の別解）と一致しました"
+        };
+      }
+    }
+
+    // 3. 聞き返し候補（retry_matches）との一致、または編集距離による類似判定
+    let isCloseMatch = false;
+    for (const ret of question.retry_matches || []) {
+      if (extracted === ret || this.toNormalizedHiragana(ret) === normExtracted) {
+        isCloseMatch = true;
+        break;
+      }
+    }
+
+    // 編集距離チェック（3文字以上の読みに対して1文字違い等）
+    if (!isCloseMatch && normReading.length >= 3 && normExtracted.length >= 2) {
+      const dist = this.levenshtein(normExtracted, normReading);
+      const maxAllowedDist = normReading.length >= 5 ? 2 : 1;
+      if (dist <= maxAllowedDist) {
+        isCloseMatch = true;
+      }
+    }
+
+    if (isCloseMatch) {
+      if (!isRetry) {
+        return {
+          status: "RETRY",
+          extracted,
+          reason: "登録された正解表記とは完全一致せず、読みや一部が近いため再回答をお願いします"
+        };
+      } else {
+        return {
+          status: "WRONG",
+          extracted,
+          reason: "再回答でも登録された正解・許容表記と確認できませんでした"
+        };
+      }
+    }
+
+    // 4. 明らかな不一致
+    return {
+      status: "WRONG",
+      extracted,
+      reason: "認識された回答が、登録された正解・許容表記と一致しませんでした"
+    };
+  }
+};
+
+/**
+ * ============================================================================
+ * 3. 音声認識ラッパー (SpeechManager)
+ * 遅れて届く認識結果の混入を防ぐため sessionToken でイベントをフィルタリング
+ * ============================================================================
+ */
+class SpeechManager {
+  constructor() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    this.isSupported = !!SpeechRecognition;
+    this.RecognitionClass = SpeechRecognition;
+    this.instance = null;
+    this.currentToken = 0;
+  }
+
+  start({ onReady, onInterim, onFinal, onError, onEnd }) {
+    this.stop();
+    this.currentToken++;
+    const token = this.currentToken;
+
+    if (!this.isSupported) {
+      if (onError) onError("お使いのブラウザはWeb Speech API（音声認識）に対応していません。Chromeをご利用ください。");
+      return;
+    }
+
+    const rec = new this.RecognitionClass();
+    rec.lang = "ja-JP";
+    rec.interimResults = true;
+    rec.continuous = false;
+    this.instance = rec;
+
+    let finalSent = false;
+
+    rec.onstart = () => {
+      if (token !== this.currentToken) return;
+      if (onReady) onReady();
+    };
+
+    rec.onresult = (event) => {
+      if (token !== this.currentToken) return;
+      let interimText = "";
+      let finalText = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalText += t;
+        } else {
+          interimText += t;
+        }
+      }
+
+      if (interimText && onInterim) {
+        onInterim(interimText);
+      }
+      if (finalText && !finalSent) {
+        finalSent = true;
+        if (onFinal) onFinal(finalText);
+      }
+    };
+
+    rec.onerror = (event) => {
+      if (token !== this.currentToken) return;
+      if (onError) onError(event.error);
+    };
+
+    rec.onend = () => {
+      if (token !== this.currentToken) return;
+      if (onEnd) onEnd(finalSent);
+    };
+
+    try {
+      rec.start();
+    } catch (e) {
+      if (onError) onError(e.message);
+    }
+  }
+
+  stop() {
+    this.currentToken++;
+    if (this.instance) {
+      try { this.instance.abort(); } catch (e) {}
+      this.instance = null;
+    }
+  }
+}
+
+/**
+ * ============================================================================
+ * 4. ゲーム進行管理 (QuizApp)
+ * ============================================================================
+ */
+const App = {
+  speech: new SpeechManager(),
+  settings: {
+    progressionMode: "continuous", // 'continuous' | 'slow'
+    waitMode: "normal",            // 'normal' (10s) | 'unlimited'
+    manualMode: false
+  },
+  state: {
+    questions: [],
+    currentIndex: 0,
+    score: 0,
+    phase: "IDLE", // READING | WAITING_BUZZ | MIC_PREP | ANSWERING | RESULT | PAUSED
+    charIndex: 0,
+    slashIndex: null, // null = 未回答で終了
+    isRetry: false,
+    firstAttempt: null, // { raw, extracted, reason }
+    secondAttempt: null,
+    history: [],
+    pausedFromPhase: null,
+    pausePendingAfterAnswer: false
+  },
+  timers: {
+    reading: null,
+    countdown: null,
+    autoNext: null
+  },
+
+  init() {
+    this.bindSetupEvents();
+    this.bindQuizEvents();
+    this.bindReportEvents();
+    this.updateReportCountUI();
+  },
+
+  // ------------------ セットアップ＆マイク確認 ------------------
+  bindSetupEvents() {
+    const btnMicTest = document.getElementById("btn-mic-test");
+    const statusBadge = document.getElementById("mic-test-status");
+    const transcriptSpan = document.getElementById("mic-test-transcript");
+    const errorDiv = document.getElementById("mic-test-error");
+    const btnStart = document.getElementById("btn-start-game");
+    const chkManual = document.getElementById("chk-manual-mode");
+    const testBox = document.getElementById("mic-test-box");
+
+    chkManual.addEventListener("change", () => {
+      this.settings.manualMode = chkManual.checked;
+      if (chkManual.checked) {
+        statusBadge.textContent = "手動入力モード（確認済）";
+        statusBadge.className = "status-badge ok";
+        btnStart.disabled = false;
+      } else {
+        statusBadge.textContent = "未確認";
+        statusBadge.className = "status-badge";
+        btnStart.disabled = true;
+      }
+    });
+
+    btnMicTest.addEventListener("click", () => {
+      errorDiv.textContent = "";
+      transcriptSpan.textContent = "マイク起動中... 話しかけてください";
+      statusBadge.textContent = "確認中...";
+      statusBadge.className = "status-badge warn";
+      testBox.classList.add("listening");
+
+      let latestInterim = "";
+
+      this.speech.start({
+        onReady: () => {
+          transcriptSpan.textContent = "【受付中】「テスト」など短い言葉を話してください...";
+        },
+        onInterim: (text) => {
+          latestInterim = text;
+          transcriptSpan.textContent = text + " （認識中...）";
+        },
+        onFinal: (text) => {
+          testBox.classList.remove("listening");
+          transcriptSpan.textContent = `「${text}」`;
+          statusBadge.textContent = "確認OK";
+          statusBadge.className = "status-badge ok";
+          btnStart.disabled = false;
+          this.speech.stop();
+        },
+        onError: (err) => {
+          testBox.classList.remove("listening");
+          statusBadge.textContent = "確認失敗";
+          statusBadge.className = "status-badge ng";
+          errorDiv.textContent = `音声を取得できませんでした（エラー: ${err}）。マイクの許可設定を確認して再度押してください。`;
+        },
+        onEnd: (finalSent) => {
+          testBox.classList.remove("listening");
+          if (!finalSent && latestInterim) {
+            transcriptSpan.textContent = `「${latestInterim}」`;
+            statusBadge.textContent = "確認OK";
+            statusBadge.className = "status-badge ok";
+            btnStart.disabled = false;
+          }
+        }
+      });
+    });
+
+    btnStart.addEventListener("click", () => {
+      this.speech.stop();
+      this.settings.progressionMode = document.querySelector('input[name="prog-mode"]:checked').value;
+      this.settings.waitMode = document.querySelector('input[name="wait-mode"]:checked').value;
+      this.startGame();
+    });
+  },
+
+  // ------------------ ゲーム開始・出題進行 ------------------
+  startGame() {
+    // 10問をシャッフルして重複なく抽出
+    const shuffled = [...QUESTION_POOL].sort(() => Math.random() - 0.5);
+    this.state.questions = shuffled.slice(0, 10);
+    this.state.currentIndex = 0;
+    this.state.score = 0;
+    this.state.history = [];
+
+    this.showScreen("screen-quiz");
+    this.startQuestion();
+  },
+
+  startQuestion() {
+    this.clearAllTimers();
+    this.speech.stop();
+
+    const q = this.state.questions[this.state.currentIndex];
+    this.state.phase = "READING";
+    this.state.charIndex = 0;
+    this.state.slashIndex = null;
+    this.state.isRetry = false;
+    this.state.firstAttempt = null;
+    this.state.secondAttempt = null;
+    this.state.pausePendingAfterAnswer = false;
+
+    // UI初期化
+    document.getElementById("quiz-qnum").textContent = `第${this.state.currentIndex + 1}問 / ${this.state.questions.length}`;
+    document.getElementById("quiz-theme").textContent = q.theme;
+    document.getElementById("quiz-score").textContent = this.state.score;
+    document.getElementById("question-display").textContent = "";
+    document.getElementById("btn-buzzer").disabled = false;
+    document.getElementById("btn-buzzer").style.display = "block";
+    document.getElementById("answer-mic-box").style.display = "none";
+    document.getElementById("round-result-box").style.display = "none";
+    document.getElementById("pause-notice").style.display = "none";
+    document.getElementById("btn-pause").textContent = "一時停止";
+    document.getElementById("btn-pause"). style.display =
+      this.settings.progressionMode === "continuous" ? "inline-block" : "none";
+
+    this.updatePhaseUI("問題表示中...", "-- 秒", 100);
+
+    // 文字を少しずつ表示（1文字90ms）
+    this.timers.reading = setInterval(() => {
+      if (this.state.phase !== "READING") return;
+      this.state.charIndex++;
+      document.getElementById("question-display").textContent = q.question.slice(0, this.state.charIndex);
+
+      if (this.state.charIndex >= q.question.length) {
+        clearInterval(this.timers.reading);
+        this.onQuestionFullDisplayed();
+      }
+    }, 90);
+  },
+
+  onQuestionFullDisplayed() {
+    this.state.phase = "WAITING_BUZZ";
+    if (this.settings.waitMode === "unlimited") {
+      this.updatePhaseUI("全文表示完了（テスト用無制限待機中）", "無制限", 100);
+    } else {
+      this.startCountdown(10.0, "早押し待機中...", () => {
+        // 10秒経過で未回答終了
+        this.finishQuestion({
+          endStatus: "UNANSWERED",
+          isCorrect: false,
+          reason: "全文表示後10秒経過（未回答）"
+        });
+      });
+    }
+  },
+
+  // 早押しボタン押下
+  handleBuzzer() {
+    if (this.state.phase !== "READING" && this.state.phase !== "WAITING_BUZZ") return;
+    this.clearAllTimers();
+
+    // 押した時点の文字位置を記録
+    this.state.slashIndex = this.state.charIndex;
+    document.getElementById("btn-buzzer").disabled = true;
+
+    this.startVoiceAnswerSession(false);
+  },
+
+  // 音声回答の受付開始（初回または聞き返し）
+  startVoiceAnswerSession(isRetry) {
+    this.state.isRetry = isRetry;
+    this.state.phase = "MIC_PREP";
+    this.clearAllTimers();
+
+    const micBox = document.getElementById("answer-mic-box");
+    const retryPrompt = document.getElementById("retry-prompt");
+    const liveTranscript = document.getElementById("live-transcript");
+    const manualArea = document.getElementById("manual-input-area");
+    const manualInput = document.getElementById("manual-answer-input");
+
+    micBox.style.display = "block";
+    micBox.classList.remove("listening");
+    liveTranscript.textContent = "マイク準備中...";
+
+    if (isRetry) {
+      retryPrompt.style.display = "block";
+      retryPrompt.textContent = `【聞き返し（残り1回）】${this.state.firstAttempt.reason} → もう一度お願いします（新しく8秒）`;
+    } else {
+      retryPrompt.style.display = "none";
+    }
+
+    this.updatePhaseUI("マイク準備中...", "8.0 秒", 100);
+
+    // 手動シミュレートモードの場合
+    if (this.settings.manualMode) {
+      manualArea.style.display = "block";
+      manualInput.value = "";
+      manualInput.focus();
+      this.onMicReadyToAnswer();
+      return;
+    } else {
+      manualArea.style.display = "none";
+    }
+
+    let latestInterimText = "";
+    let handled = false;
+
+    this.speech.start({
+      onReady: () => {
+        if (this.state.phase !== "MIC_PREP") return;
+        this.onMicReadyToAnswer(() => {
+          // 8秒時間切れ時の処理：発話途中の文字があればそれを評価、なければ時間切れ
+          if (handled) return;
+          handled = true;
+          this.speech.stop();
+          if (latestInterimText.trim()) {
+            this.processSpokenAnswer(latestInterimText.trim());
+          } else {
+            this.finishQuestion({
+              endStatus: "TIMEOUT",
+              isCorrect: false,
+              reason: "回答時間切れ（8秒以内に発言を確認できませんでした）"
+            });
+          }
+        });
+      },
+      onInterim: (text) => {
+        latestInterimText = text;
+        liveTranscript.textContent = text;
+      },
+      onFinal: (text) => {
+        if (handled) return;
+        handled = true;
+        this.clearAllTimers();
+        this.speech.stop();
+        liveTranscript.textContent = text;
+        this.processSpokenAnswer(text);
+      },
+      onError: (err) => {
+        if (handled) return;
+        handled = true;
+        this.clearAllTimers();
+        this.speech.stop();
+        if (latestInterimText.trim()) {
+          this.processSpokenAnswer(latestInterimText.trim());
+        } else {
+          this.processSpokenAnswer("");
+        }
+      },
+      onEnd: (finalSent) => {
+        if (handled || finalSent) return;
+        if (latestInterimText.trim()) {
+          handled = true;
+          this.clearAllTimers();
+          this.processSpokenAnswer(latestInterimText.trim());
+        }
+      }
+    });
+  },
+
+  // マイク受付準備完了（ここから8秒カウント開始）
+  onMicReadyToAnswer(onTimeoutCallback) {
+    this.state.phase = "ANSWERING";
+    const micBox = document.getElementById("answer-mic-box");
+    micBox.classList.add("listening");
+    document.getElementById("live-transcript").textContent = "（どうぞお答えください...）";
+
+    this.startCountdown(8.0, this.state.isRetry ? "再回答受付中（8秒）" : "回答受付中（8秒）", () => {
+      if (onTimeoutCallback) {
+        onTimeoutCallback();
+      } else {
+        // 手動モードでの時間切れ
+        const val = document.getElementById("manual-answer-input").value.trim();
+        if (val) {
+          this.processSpokenAnswer(val);
+        } else {
+          this.finishQuestion({
+            endStatus: "TIMEOUT",
+            isCorrect: false,
+            reason: "回答時間切れ（8秒）"
+          });
+        }
+      }
+    });
+  },
+
+  // 発言を受け取って判定エンジンにかける
+  processSpokenAnswer(rawText) {
+    const q = this.state.questions[this.state.currentIndex];
+    const evalResult = JudgeEngine.evaluate(rawText, q, this.state.isRetry);
+
+    if (!this.state.isRetry) {
+      this.state.firstAttempt = {
+        raw: rawText || "（取得なし）",
+        extracted: evalResult.extracted,
+        reason: evalResult.reason
+      };
+    } else {
+      this.state.secondAttempt = {
+        raw: rawText || "（取得なし）",
+        extracted: evalResult.extracted,
+        reason: evalResult.reason
+      };
+    }
+
+    // 聞き返し判定（初回のみ）
+    if (evalResult.status === "RETRY" && !this.state.isRetry) {
+      this.startVoiceAnswerSession(true);
+      return;
+    }
+
+    const isCorrect = evalResult.status === "CORRECT";
+    this.finishQuestion({
+      endStatus: isCorrect ? "CORRECT" : "WRONG",
+      isCorrect,
+      reason: evalResult.reason
+    });
+  },
+
+  // 1問の終了と結果表示
+  finishQuestion({ endStatus, isCorrect, reason }) {
+    this.clearAllTimers();
+    this.speech.stop();
+    this.state.phase = "RESULT";
+
+    const q = this.state.questions[this.state.currentIndex];
+    if (isCorrect) {
+      this.state.score += 1;
+    }
+    document.getElementById("quiz-score").textContent = this.state.score;
+
+    // 問題全文＋早押しスラッシュ「／」の組み立て
+    const qDisplay = document.getElementById("question-display");
+    qDisplay.innerHTML = this.formatQuestionWithSlash(q.question, this.state.slashIndex);
+
+    document.getElementById("btn-buzzer").style.display = "none";
+    document.getElementById("answer-mic-box").style.display = "none";
+
+    // 結果パネルの表示
+    const resBox = document.getElementById("round-result-box");
+    const banner = document.getElementById("round-result-banner");
+    resBox.style.display = "block";
+
+    if (endStatus === "CORRECT") {
+      banner.className = "result-banner correct";
+      banner.textContent = "正解！ (+1 pt)";
+    } else if (endStatus === "UNANSWERED") {
+      banner.className = "result-banner wrong";
+      banner.textContent = "未回答 (0 pt)";
+    } else if (endStatus === "TIMEOUT") {
+      banner.className = "result-banner wrong";
+      banner.textContent = "時間切れ (0 pt)";
+    } else {
+      banner.className = "result-banner wrong";
+      banner.textContent = "不正解 (0 pt)";
+    }
+
+    // 初回・再回答の履歴整形
+    let rawDisplay = "（未回答）";
+    let extDisplay = "（なし）";
+    if (this.state.firstAttempt) {
+      rawDisplay = `初回：「${this.state.firstAttempt.raw}」`;
+      extDisplay = `初回：「${this.state.firstAttempt.extracted}」`;
+      if (this.state.secondAttempt) {
+        rawDisplay += ` ／ 再回答：「${this.state.secondAttempt.raw}」`;
+        extDisplay += ` ／ 再回答：「${this.state.secondAttempt.extracted}」`;
+      }
+    }
+
+    document.getElementById("res-correct-answer").textContent = q.answer_display;
+    document.getElementById("res-reading").textContent = q.reading;
+    document.getElementById("res-raw-transcript").textContent = rawDisplay;
+    document.getElementById("res-extracted").textContent = extDisplay;
+    document.getElementById("res-reason").textContent = reason;
+    document.getElementById("res-explanation").textContent = q.explanation;
+
+    // 履歴へ保存
+    this.state.history.push({
+      question: q,
+      slashIndex: this.state.slashIndex,
+      questionWithSlashText: this.formatQuestionWithSlashPlain(q.question, this.state.slashIndex),
+      endStatus,
+      isCorrect,
+      reason,
+      firstAttempt: this.state.firstAttempt,
+      secondAttempt: this.state.secondAttempt
+    });
+
+    // 回答中に一時停止が予約されていた場合
+    if (this.state.pausePendingAfterAnswer) {
+      this.state.pausePendingAfterAnswer = false;
+      this.enterPauseState();
+      return;
+    }
+
+    // 連続モードなら3秒後に次へ
+    const autoNextLabel = document.getElementById("auto-next-label");
+    if (this.settings.progressionMode === "continuous") {
+      autoNextLabel.textContent = "連続モード：3秒後に次の問題へ進みます";
+      this.startCountdown(3.0, "結果表示中（3秒後に次へ）", () => {
+        this.goToNextQuestion();
+      });
+    } else {
+      autoNextLabel.textContent = "ゆっくりモード：「次の問題へ」を押して進んでください";
+      this.updatePhaseUI("結果確認中", "-- 秒", 0);
+    }
+  },
+
+  goToNextQuestion() {
+    this.clearAllTimers();
+    this.state.currentIndex++;
+    if (this.state.currentIndex >= this.state.questions.length) {
+      this.showFinalResults();
+    } else {
+      this.startQuestion();
+    }
+  },
+
+  // ------------------ 一時停止制御 ------------------
+  togglePause() {
+    const btnPause = document.getElementById("btn-pause");
+    const notice = document.getElementById("pause-notice");
+
+    // 音声回答中に押された場合は「判定後に停止する」予約を入れる（仕様書3.4）
+    if (this.state.phase === "MIC_PREP" || this.state.phase === "ANSWERING") {
+      this.state.pausePendingAfterAnswer = true;
+      notice.style.display = "block";
+      notice.textContent = "この回答の判定が完了した後に一時停止します...";
+      return;
+    }
+
+    if (this.state.phase === "PAUSED") {
+      // 再開
+      notice.style.display = "none";
+      btnPause.textContent = "一時停止";
+      const prev = this.state.pausedFromPhase;
+      if (prev === "RESULT") {
+        this.goToNextQuestion();
+      } else {
+        // 出題中に止めた場合は続きから表示を再開
+        this.state.phase = "READING";
+        const q = this.state.questions[this.state.currentIndex];
+        this.timers.reading = setInterval(() => {
+          if (this.state.phase !== "READING") return;
+          this.state.charIndex++;
+          document.getElementById("question-display").textContent = q.question.slice(0, this.state.charIndex);
+          if (this.state.charIndex >= q.question.length) {
+            clearInterval(this.timers.reading);
+            this.onQuestionFullDisplayed();
+          }
+        }, 90);
+      }
+    } else {
+      this.enterPauseState();
+    }
+  },
+
+  enterPauseState() {
+    this.clearAllTimers();
+    this.speech.stop();
+    this.state.pausedFromPhase = this.state.phase;
+    this.state.phase = "PAUSED";
+    document.getElementById("pause-notice").style.display = "block";
+    document.getElementById("pause-notice").textContent = "一時停止中（再開ボタンを押すと進行します）";
+    document.getElementById("btn-pause").textContent = "再開する";
+  },
+
+  // ------------------ 全問終了リザルト ------------------
+  showFinalResults() {
+    this.showScreen("screen-result");
+    document.getElementById("final-score").textContent = this.state.score;
+
+    const listEl = document.getElementById("result-list");
+    listEl.innerHTML = "";
+
+    this.state.history.forEach((item, idx) => {
+      const card = document.createElement("div");
+      card.className = "card";
+
+      const badgeClass = item.isCorrect ? "ok" : "ng";
+      const statusLabel =
+        item.endStatus === "CORRECT" ? "正解 (+1pt)" :
+        item.endStatus === "UNANSWERED" ? "未回答 (0pt)" :
+        item.endStatus === "TIMEOUT" ? "時間切れ (0pt)" : "不正解 (0pt)";
+
+      const firstRaw = item.firstAttempt ? item.firstAttempt.raw : "（なし）";
+      const firstExt = item.firstAttempt ? item.firstAttempt.extracted : "（なし）";
+      const retryInfo = item.secondAttempt
+        ? `<br><strong>再回答の発言：</strong>「${this.escapeHtml(item.secondAttempt.raw)}」 （抽出：「${this.escapeHtml(item.secondAttempt.extracted)}」）`
+        : "";
+
+      card.innerHTML = `
+        <div class="flex-row" style="justify-content: space-between; margin-bottom: 8px;">
+          <div>
+            <strong>第${idx + 1}問</strong> [${this.escapeHtml(item.question.theme)}]
+            <span class="status-badge ${badgeClass}">${statusLabel}</span>
+          </div>
+          <button type="button" class="secondary btn-open-report" data-idx="${idx}" style="padding: 4px 12px; font-size: 0.85rem;">誤判定を報告</button>
+        </div>
+        <div style="margin-bottom: 8px; font-weight: 600;">
+          ${this.formatQuestionWithSlash(item.question.question, item.slashIndex)}
+        </div>
+        <table class="meta-table">
+          <tr><th>正解</th><td><strong>${this.escapeHtml(item.question.answer_display)}</strong> （${this.escapeHtml(item.question.reading)}）</td></tr>
+          <tr><th>認識された発言</th><td>初回：「${this.escapeHtml(firstRaw)}」 （抽出：「${this.escapeHtml(firstExt)}」）${retryInfo}</td></tr>
+          <tr><th>判定・終了理由</th><td>${this.escapeHtml(item.reason)}</td></tr>
+          <tr><th>解説</th><td>${this.escapeHtml(item.question.explanation)}</td></tr>
+        </table>
+      `;
+      listEl.appendChild(card);
+    });
+
+    listEl.querySelectorAll(".btn-open-report").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const i = Number(btn.getAttribute("data-idx"));
+        this.openReportModal(this.state.history[i]);
+      });
+    });
+  },
+
+  // ------------------ 誤判定報告（LocalStorage & JSON書き出し） ------------------
+  bindReportEvents() {
+    document.getElementById("btn-close-modal").addEventListener("click", () => {
+      document.getElementById("modal-report").classList.remove("active");
+    });
+
+    document.getElementById("btn-save-report").addEventListener("click", () => {
+      const actual = document.getElementById("rep-actual-spoken").value.trim();
+      const msgEl = document.getElementById("rep-save-msg");
+      if (!actual) {
+        msgEl.textContent = "「実際に言った答え」を入力してください。";
+        return;
+      }
+
+      const item = this.currentReportTarget;
+      const reportRecord = {
+        reported_at: new Date().toISOString(),
+        question_id: item.question.id,
+        question_text: item.question.question,
+        slash_position: item.slashIndex,
+        correct_answer: item.question.answer_display,
+        end_status: item.endStatus,
+        judge_reason: item.reason,
+        first_attempt: item.firstAttempt,
+        second_attempt: item.secondAttempt,
+        report_type: document.getElementById("rep-type").value,
+        actual_spoken_by_player: actual,
+        notes: document.getElementById("rep-notes").value.trim()
+      };
+
+      // 保存処理（失敗時は偽装せず直接ダウンロードを促す）
+      try {
+        const existing = JSON.parse(localStorage.getItem("voice_quiz_reports_v01") || "[]");
+        existing.push(reportRecord);
+        localStorage.setItem("voice_quiz_reports_v01", JSON.stringify(existing));
+        this.updateReportCountUI();
+        document.getElementById("modal-report").classList.remove("active");
+        alert("誤判定報告をブラウザ内に保存しました。リザルト画面からまとめてJSON書き出しが可能です。");
+      } catch (err) {
+        msgEl.textContent = "ブラウザへの保存に失敗しました。直ちに単体JSONとして書き出します。";
+        this.downloadJson([reportRecord], `quiz_report_fallback_${Date.now()}.json`);
+      }
+    });
+
+    document.getElementById("btn-export-reports").addEventListener("click", () => {
+      let reports = [];
+      try {
+        reports = JSON.parse(localStorage.getItem("voice_quiz_reports_v01") || "[]");
+      } catch (e) {}
+      if (reports.length === 0) {
+        alert("現在保存されている誤判定報告はありません。");
+        return;
+      }
+      this.downloadJson(reports, `voice_quiz_reports_${new Date().toISOString().slice(0,10)}.json`);
+    });
+
+    document.getElementById("btn-restart").addEventListener("click", () => {
+      this.showScreen("screen-setup");
+    });
+  },
+
+  openReportModal(historyItem) {
+    this.currentReportTarget = historyItem;
+    document.getElementById("rep-q-text").textContent = historyItem.question.question;
+    const rawStr = historyItem.firstAttempt
+      ? `初回: ${historyItem.firstAttempt.raw}` + (historyItem.secondAttempt ? ` / 再回答: ${historyItem.secondAttempt.raw}` : "")
+      : "未回答";
+    document.getElementById("rep-raw").textContent = rawStr;
+    document.getElementById("rep-reason").textContent = historyItem.reason;
+    document.getElementById("rep-actual-spoken").value = "";
+    document.getElementById("rep-notes").value = "";
+    document.getElementById("rep-save-msg").textContent = "";
+    document.getElementById("modal-report").classList.add("active");
+  },
+
+  updateReportCountUI() {
+    try {
+      const existing = JSON.parse(localStorage.getItem("voice_quiz_reports_v01") || "[]");
+      document.getElementById("report-count").textContent = existing.length;
+    } catch (e) {
+      document.getElementById("report-count").textContent = "0";
+    }
+  },
+
+  downloadJson(dataObj, filename) {
+    const blob = new Blob([JSON.stringify(dataObj, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  // ------------------ UIイベント・ユーティリティ ------------------
+  bindQuizEvents() {
+    document.getElementById("btn-buzzer").addEventListener("click", () => this.handleBuzzer());
+    document.getElementById("btn-next-question").addEventListener("click", () => this.goToNextQuestion());
+    document.getElementById("btn-pause").addEventListener("click", () => this.togglePause());
+
+    document.getElementById("btn-manual-submit").addEventListener("click", () => {
+      if (this.state.phase !== "ANSWERING") return;
+      const val = document.getElementById("manual-answer-input").value.trim();
+      this.clearAllTimers();
+      this.processSpokenAnswer(val);
+    });
+
+    // キーボードショートカット（Space / Enterで早押し、結果画面でEnterで次へ）
+    window.addEventListener("keydown", (e) => {
+      const activeScreen = document.querySelector(".screen.active");
+      if (!activeScreen || activeScreen.id !== "screen-quiz") return;
+      if (document.getElementById("modal-report").classList.contains("active")) return;
+      if (document.activeElement && document.activeElement.tagName === "INPUT") {
+        if (e.key === "Enter" && this.state.phase === "ANSWERING") {
+          e.preventDefault();
+          document.getElementById("btn-manual-submit").click();
+        }
+        return;
+      }
+
+      if ((e.code === "Space" || e.code === "Enter") &&
+          (this.state.phase === "READING" || this.state.phase === "WAITING_BUZZ")) {
+        e.preventDefault();
+        this.handleBuzzer();
+      } else if (e.code === "Enter" && this.state.phase === "RESULT") {
+        e.preventDefault();
+        this.goToNextQuestion();
+      }
+    });
+  },
+
+  startCountdown(seconds, labelText, onComplete) {
+    clearInterval(this.timers.countdown);
+    const totalMs = seconds * 1000;
+    const startTime = performance.now();
+
+    this.updatePhaseUI(labelText, `${seconds.toFixed(1)} 秒`, 100);
+
+    this.timers.countdown = setInterval(() => {
+      const elapsed = performance.now() - startTime;
+      const remainMs = Math.max(0, totalMs - elapsed);
+      const remainSec = (remainMs / 1000).toFixed(1);
+      const pct = (remainMs / totalMs) * 100;
+
+      this.updatePhaseUI(labelText, `${remainSec} 秒`, pct);
+
+      if (remainMs <= 0) {
+        clearInterval(this.timers.countdown);
+        if (onComplete) onComplete();
+      }
+    }, 50);
+  },
+
+  updatePhaseUI(phaseText, timerText, barPercent) {
+    document.getElementById("phase-label").textContent = phaseText;
+    document.getElementById("timer-label").textContent = timerText;
+    document.getElementById("timer-bar").style.width = `${barPercent}%`;
+  },
+
+  formatQuestionWithSlash(fullText, slashIdx) {
+    if (slashIdx === null || slashIdx === undefined) {
+      return `${this.escapeHtml(fullText)} <span class="status-badge ng">未回答</span>`;
+    }
+    const before = this.escapeHtml(fullText.slice(0, slashIdx));
+    const after = this.escapeHtml(fullText.slice(slashIdx));
+    return `${before}<span class="slash-mark">／</span>${after}`;
+  },
+
+  formatQuestionWithSlashPlain(fullText, slashIdx) {
+    if (slashIdx === null || slashIdx === undefined) return `${fullText}（未回答）`;
+    return `${fullText.slice(0, slashIdx)}／${fullText.slice(slashIdx)}`;
+  },
+
+  clearAllTimers() {
+    clearInterval(this.timers.reading);
+    clearInterval(this.timers.countdown);
+    clearTimeout(this.timers.autoNext);
+  },
+
+  showScreen(id) {
+    document.querySelectorAll(".screen").forEach(el => el.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+  },
+
+  escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+};
+
+window.addEventListener("DOMContentLoaded", () => App.init());
+</script>
+</body>
+</html>

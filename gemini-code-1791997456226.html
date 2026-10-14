@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>タイ県名の読み方 ショート動画プレイヤー (9:16)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700;900&family=Noto+Sans+Thai:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  body {
+    font-family: 'Noto Sans JP', 'Noto Sans Thai', sans-serif;
+    background: #09090b;
+    color: #fff;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  /* 9:16 縦型ショート動画キャンバス */
+  .shorts-canvas {
+    width: 390px;
+    height: 693px;
+    background: radial-gradient(circle at center, #1e293b 0%, #09090b 100%);
+    position: relative;
+    overflow: hidden;
+    border: 3px solid #3f3f46;
+    border-radius: 24px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.9);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .thai-sign {
+    background: linear-gradient(180deg, #007a3d 0%, #005228 100%);
+    border: 4px solid #ffffff;
+    box-shadow: 0 0 0 3px #007a3d, 0 12px 25px rgba(0,0,0,0.7);
+  }
+  .highlight-part {
+    color: #fde047;
+    text-shadow: 0 0 12px rgba(250, 204, 21, 0.8);
+    border-bottom: 4px solid #f59e0b;
+    padding-bottom: 2px;
+  }
+  @keyframes pop-in {
+    0% { transform: scale(0.75); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  .anim-pop {
+    animation: pop-in 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+</style>
+</head>
+<body class="p-4 flex-col gap-4">
+
+  <!-- 操作バー -->
+  <div class="flex items-center gap-3">
+    <button onclick="player.start()" class="px-5 py-2 rounded-full bg-emerald-500 hover:bg-emerald-400 text-black font-black text-sm shadow-lg transition">
+      ▶ ショート動画を再生 / 最初から
+    </button>
+    <button onclick="player.nextScene()" class="px-4 py-2 rounded-full bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold text-xs border border-zinc-600 transition">
+      次のカットへ ⏭
+    </button>
+  </div>
+
+  <!-- 9:16 縦画面フレーム -->
+  <div class="shorts-canvas" id="canvas">
+    <!-- 上部シークバー＆常設ヘッダー -->
+    <div class="p-4 z-20 space-y-2">
+      <div class="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+        <div id="progressBar" class="h-full bg-amber-400 transition-all duration-300" style="width: 0%;"></div>
+      </div>
+      <div class="flex items-center justify-between">
+        <span class="px-2.5 py-0.5 rounded bg-red-600 text-white font-black text-[11px] tracking-wider">GeoGuessr 1分攻略</span>
+        <span class="text-xs font-bold text-amber-300" id="sceneStepBadge">STEP 1 / 6</span>
+      </div>
+      <div class="bg-black/70 border border-amber-500/50 rounded-xl p-2.5 text-center">
+        <div class="text-xs text-zinc-300 font-bold">タイ文字の県名が一瞬で読める！</div>
+        <div class="text-lg font-black text-amber-400">「4大頻出パーツ」攻略法</div>
+      </div>
+    </div>
+
+    <!-- 中央メインビジュアル（シーンごとに切替） -->
+    <div id="stageContent" class="px-4 flex-1 flex flex-col items-center justify-center z-10">
+      <!-- JSで動的描画 -->
+    </div>
+
+    <!-- 下部：キャラクター立ち絵バッジ＆字幕ボックス -->
+    <div class="p-4 z-20 space-y-2 bg-gradient-to-t from-black via-black/90 to-transparent pt-8">
+      <div class="flex items-center gap-2">
+        <span id="speakerBadge" class="px-3 py-1 rounded-full text-xs font-black bg-emerald-500 text-black">
+          ずんだもん
+        </span>
+      </div>
+      <div class="bg-zinc-950/95 border-2 border-zinc-700 rounded-2xl p-3.5 min-h-[92px] flex items-center shadow-2xl">
+        <p id="subtitleText" class="text-sm font-black leading-relaxed text-white">
+          「▶ ショート動画を再生」を押すとスタートするのだ！
+        </p>
+      </div>
+    </div>
+  </div>
+
+<script>
+const SCENES = [
+  {
+    step: 'INTRO',
+    speaker: 'ずんだもん',
+    speakerStyle: 'bg-emerald-500 text-black',
+    duration: 6500,
+    subtitle: 'うわぁーっ！またタイなのだ！道路標識に街の名前が書いてあるのに、暗号すぎて1ミリも読めないのだ！',
+    html: `
+      <div class="anim-pop w-full space-y-4 text-center">
+        <div class="thai-sign rounded-xl p-4 space-y-2">
+          <div class="text-[10px] font-mono opacity-80">THAILAND HIGHWAY</div>
+          <div class="text-3xl font-black">นครราชสีมา</div>
+          <div class="text-3xl font-black">สุราษฎร์ธานี</div>
+          <div class="text-2xl font-black">กาญจนบุรี</div>
+        </div>
+        <div class="inline-block px-4 py-1.5 rounded-full bg-red-950 border border-red-500 text-red-300 font-black text-sm">
+          初見だと全部同じに見える…！？
+        </div>
+      </div>
+    `
+  },
+  {
+    step: 'SECRET',
+    speaker: '四国めたん',
+    speakerStyle: 'bg-pink-500 text-white',
+    duration: 7000,
+    subtitle: '諦めるのは早いわよ！タイ文字は「4つの頻出パーツ」を覚えるだけで、20以上の県が一瞬で読めるようになるの！',
+    html: `
+      <div class="anim-pop w-full space-y-3 text-center">
+        <div class="bg-amber-500/20 border-2 border-amber-400 rounded-2xl p-4">
+          <div class="text-xs font-bold text-amber-300">丸暗記は不要！</div>
+          <div class="text-2xl font-black text-white mt-1">パズル感覚で<br><span class="text-amber-400 text-3xl">4つのパーツ</span>を見るだけ！</div>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-sm font-black">
+          <div class="bg-zinc-900 border border-zinc-700 p-2.5 rounded-lg">① จังหวัด (県)</div>
+          <div class="bg-zinc-900 border border-zinc-700 p-2.5 rounded-lg">② 〜บุรี (ブリー)</div>
+          <div class="bg-zinc-900 border border-zinc-700 p-2.5 rounded-lg">③ นคร〜 (ナコーン)</div>
+          <div class="bg-zinc-900 border border-zinc-700 p-2.5 rounded-lg">④ 〜ธานี (ターニー)</div>
+        </div>
+      </div>
+    `
+  },
+  {
+    step: 'PART 1 : 県の目印',
+    speaker: '四国めたん',
+    speakerStyle: 'bg-pink-500 text-white',
+    duration: 8000,
+    subtitle: '第1のパーツは「県」を表す『チャンワット(จังหวัด)』！看板やゴミ箱の『จ.』のすぐ後ろに必ず県名が来るわ！',
+    html: `
+      <div class="anim-pop w-full space-y-3 text-center">
+        <div class="bg-zinc-900 border-2 border-cyan-400 rounded-xl p-4 space-y-2">
+          <div class="text-xs text-cyan-300 font-bold">「〜県」を表す目印ワード</div>
+          <div class="text-4xl font-black"><span class="highlight-part">จังหวัด</span> (チャンワット)</div>
+          <div class="text-lg font-black text-amber-300">略称：<span class="px-2 py-0.5 bg-zinc-800 rounded text-white">จ.</span>〇〇</div>
+        </div>
+        <div class="thai-sign rounded-xl p-3 text-left space-y-1">
+          <div class="text-xs opacity-80">実際の看板での見え方：</div>
+          <div class="text-2xl font-black"><span class="highlight-part">จังหวัด</span>พิษณุโลก</div>
+          <div class="text-xs text-amber-300 font-bold">↑ ここを見つければ後ろが県名！</div>
+        </div>
+      </div>
+    `
+  },
+  {
+    step: 'PART 2 : 〜ブリー',
+    speaker: '四国めたん',
+    speakerStyle: 'bg-pink-500 text-white',
+    duration: 8500,
+    subtitle: '第2のパーツはお尻につく『ブリー(บุรี)』！チョンブリーやカンチャナブリーなど、バンコク周辺の8県に集中しているわ！',
+    html: `
+      <div class="anim-pop w-full space-y-2.5 text-center">
+        <div class="bg-emerald-950/80 border-2 border-emerald-400 rounded-xl p-3">
+          <div class="text-xs text-emerald-300 font-bold">お尻につく「〜の街」（中部・東部に集中）</div>
+          <div class="text-4xl font-black mt-1">〜<span class="highlight-part">บุรี</span> ＝ ブリー</div>
+        </div>
+        <div class="space-y-1.5 text-left">
+          <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 flex justify-between items-center">
+            <span class="text-2xl font-black">ชล<span class="highlight-part">บุรี</span></span>
+            <span class="text-sm font-black text-amber-300">チョンブリー</span>
+          </div>
+          <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 flex justify-between items-center">
+            <span class="text-2xl font-black">กาญจน<span class="highlight-part">บุรี</span></span>
+            <span class="text-sm font-black text-amber-300">カンチャナブリー</span>
+          </div>
+          <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 flex justify-between items-center">
+            <span class="text-2xl font-black">สระ<span class="highlight-part">บุรี</span></span>
+            <span class="text-sm font-black text-amber-300">サラブリー</span>
+          </div>
+        </div>
+      </div>
+    `
+  },
+  {
+    step: 'PART 3 : ナコーン〜',
+    speaker: 'ずんだもん',
+    speakerStyle: 'bg-emerald-500 text-black',
+    duration: 8500,
+    subtitle: '第3のパーツは頭につく3文字『ナコーン(นคร)』！ナコーンサワンやコラートなど、幹線道路の巨大都市ばかりなのだ！',
+    html: `
+      <div class="anim-pop w-full space-y-2.5 text-center">
+        <div class="bg-amber-950/80 border-2 border-amber-400 rounded-xl p-3">
+          <div class="text-xs text-amber-300 font-bold">頭につく3文字「都市」（全国の要衝）</div>
+          <div class="text-4xl font-black mt-1"><span class="highlight-part">นคร</span>〜 ＝ ナコーン</div>
+        </div>
+        <div class="space-y-1.5 text-left">
+          <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 flex justify-between items-center">
+            <span class="text-2xl font-black"><span class="highlight-part">นคร</span>สวรรค์</span>
+            <span class="text-sm font-black text-amber-300">ナコーンサワン</span>
+          </div>
+          <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 flex justify-between items-center">
+            <span class="text-2xl font-black"><span class="highlight-part">นคร</span>ราชสีมา</span>
+            <span class="text-xs font-black text-amber-300">ナコーンラーチャシーマー</span>
+          </div>
+          <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 flex justify-between items-center">
+            <span class="text-2xl font-black"><span class="highlight-part">นคร</span>ปฐม</span>
+            <span class="text-sm font-black text-amber-300">ナコーンパトム</span>
+          </div>
+        </div>
+      </div>
+    `
+  },
+  {
+    step: 'PART 4 : ターニー＆チェン',
+    speaker: '四国めたん',
+    speakerStyle: 'bg-pink-500 text-white',
+    duration: 9000,
+    subtitle: '最後は『ターニー(ธานี)』と北部の『チェン(เชียง)』！頭が「ウ(อุ)」でお尻がターニーなら北東部のウドーンかウボン確定よ！',
+    html: `
+      <div class="anim-pop w-full space-y-2 text-center">
+        <div class="space-y-1.5 text-left">
+          <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 flex justify-between items-center">
+            <span class="text-2xl font-black"><span class="text-cyan-400">อุ</span>ดร<span class="highlight-part">ธานี</span></span>
+            <span class="text-sm font-black text-amber-300">ウドーンターニー</span>
+          </div>
+          <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 flex justify-between items-center">
+            <span class="text-2xl font-black"><span class="text-cyan-400">อุ</span>บลราช<span class="highlight-part">ธานี</span></span>
+            <span class="text-xs font-black text-amber-300">ウボンラーチャターニー</span>
+          </div>
+          <div class="bg-zinc-900 border border-zinc-700 rounded-lg p-2.5 flex justify-between items-center">
+            <span class="text-2xl font-black">สุราษฎร์<span class="highlight-part">ธานี</span></span>
+            <span class="text-sm font-black text-amber-300">スラートターニー(南)</span>
+          </div>
+          <div class="bg-zinc-900 border border-emerald-500 rounded-lg p-2.5 flex justify-between items-center">
+            <span class="text-2xl font-black"><span class="highlight-part">เชียง</span>ใหม่ / ราย</span>
+            <span class="text-xs font-black text-emerald-300">チェンマイ / ラーイ(北)</span>
+          </div>
+        </div>
+        <div class="p-2 rounded-lg bg-gradient-to-r from-red-600 to-amber-600 font-black text-xs">
+          保存して『GEO地名でGO!』で声に出して特訓しよう！
+        </div>
+      </div>
+    `
+  }
+];
+
+class ShortsPlayer {
+  constructor() {
+    this.idx = 0;
+    this.timer = null;
+    this.renderScene(0, false);
+  }
+  start() {
+    this.idx = 0;
+    this.playCurrent();
+  }
+  playCurrent() {
+    if (this.timer) clearTimeout(this.timer);
+    this.renderScene(this.idx, true);
+    const sc = SCENES[this.idx];
+    this.timer = setTimeout(() => {
+      if (this.idx + 1 < SCENES.length) {
+        this.idx++;
+        this.playCurrent();
+      }
+    }, sc.duration);
+  }
+  nextScene() {
+    if (this.timer) clearTimeout(this.timer);
+    this.idx = (this.idx + 1) % SCENES.length;
+    this.playCurrent();
+  }
+  renderScene(index, speakFlag) {
+    const sc = SCENES[index];
+    document.getElementById('sceneStepBadge').textContent = `${sc.step} (${index + 1}/${SCENES.length})`;
+    document.getElementById('progressBar').style.width = `${((index + 1) / SCENES.length) * 100}%`;
+    document.getElementById('stageContent').innerHTML = sc.html;
+    const badge = document.getElementById('speakerBadge');
+    badge.textContent = sc.speaker;
+    badge.className = `px-3 py-1 rounded-full text-xs font-black ${sc.speakerStyle}`;
+    document.getElementById('subtitleText').textContent = sc.subtitle;
+
+    if (speakFlag && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const uttr = new SpeechSynthesisUtterance(sc.subtitle);
+      uttr.lang = 'ja-JP';
+      uttr.rate = 1.25;
+      uttr.pitch = sc.speaker === 'ずんだもん' ? 1.3 : 1.05;
+      window.speechSynthesis.speak(uttr);
+    }
+  }
+}
+
+const player = new ShortsPlayer();
+</script>
+</body>
+</html>
