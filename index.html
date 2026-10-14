@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GEMINI QUIZ ARCADE - 音声＆早押し クイズ総合ステーション</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@700;900&family=Noto+Sans+JP:wght@500;700;900&family=Rajdhani:wght@700;900&family=Orbitron:wght@800;900&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Noto Sans JP', 'sans-serif'],
+            display: ['Rajdhani', 'sans-serif'],
+            arcade: ['Orbitron', 'sans-serif'],
+            rounded: ['M PLUS Rounded 1c', 'sans-serif']
+          },
+          animation: {
+            'pulse-glow': 'pulseGlow 2.5s infinite ease-in-out',
+            'float': 'float 4s ease-in-out infinite',
+          },
+          keyframes: {
+            pulseGlow: {
+              '0%, 100%': { opacity: '0.4', transform: 'scale(1)' },
+              '50%': { opacity: '0.8', transform: 'scale(1.05)' },
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-6px)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background-color: #07090e;
+      color: #f1f5f9;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.15) 0%, transparent 60%),
+        radial-gradient(circle at 10% 40%, rgba(244, 63, 94, 0.1) 0%, transparent 40%),
+        radial-gradient(circle at 90% 70%, rgba(16, 185, 129, 0.1) 0%, transparent 40%);
+      background-attachment: fixed;
+    }
+    .neon-text-cyan {
+      text-shadow: 0 0 10px rgba(6, 182, 212, 0.6), 0 0 20px rgba(6, 182, 212, 0.4);
+    }
+    .neon-text-amber {
+      text-shadow: 0 0 10px rgba(245, 158, 11, 0.6), 0 0 20px rgba(245, 158, 11, 0.4);
+    }
+    .neon-text-rose {
+      text-shadow: 0 0 10px rgba(244, 63, 94, 0.6), 0 0 20px rgba(244, 63, 94, 0.4);
+    }
+    .arcade-card {
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .arcade-card:hover {
+      transform: translateY(-6px);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-rose-500 p-0.5 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+          <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+            <i data-lucide="gamepad-2" class="w-5 h-5 text-indigo-400"></i>
+          </div>
+        </div>
+        <div>
+          <span class="font-arcade text-lg sm:text-xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-300 to-rose-400">
+            GEMINI QUIZ ARCADE
+          </span>
+          <span class="hidden sm:inline-block ml-2 text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-indigo-950 text-indigo-400 border border-indigo-800/60">
+            All-In-One Edition
+          </span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <a href="https://github.com/sakrainari/geminiquiz-games" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-bold flex items-center gap-1.5 transition">
+          <i data-lucide="github" class="w-4 h-4"></i>
+          <span class="hidden sm:inline">GitHub</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <main class="flex-1 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 w-full space-y-12">
+    <div class="text-center space-y-4 max-w-3xl mx-auto">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-bold">
+        <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-400"></i>
+        <span>音声認識・早押し・現地文字学習がひとつに集合！</span>
+      </div>
+      <h1 class="text-3xl sm:text-5xl font-black tracking-tight leading-tight">
+        遊ぶゲームを選んで<br class="hidden sm:inline">
+        <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-amber-300 to-rose-400">
+          声で即答・早押しバトル！
+        </span>
+      </h1>
+      <p class="text-sm sm:text-base text-slate-400 leading-relaxed">
+        ブラウザのマイクを許可するだけで、声に出してクイズに回答できます。<br class="hidden sm:inline">
+        アーケードゲーム感覚の3大スキン、世界の看板撃破道場、音声解説シアターを存分にお楽しみください。
+      </p>
+    </div>
+
+    <!-- Game Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+      <!-- Card 1: Voice Answer Quiz -->
+      <div class="arcade-card relative rounded-3xl bg-slate-900/90 border-2 border-indigo-500/40 hover:border-indigo-400 p-6 flex flex-col justify-between overflow-hidden shadow-xl shadow-indigo-950/40 group">
+        <div class="absolute -top-12 -right-12 w-36 h-36 bg-indigo-500/20 rounded-full blur-2xl group-hover:bg-indigo-500/30 transition"></div>
+        <div class="space-y-4 relative z-10">
+          <div class="flex items-center justify-between">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shadow-inner">
+              <i data-lucide="mic" class="w-6 h-6"></i>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+              人気No.1
+            </span>
+          </div>
+
+          <div>
+            <div class="text-xs font-bold text-indigo-400 uppercase tracking-wider mb-1">Arcade Buzzer Quiz</div>
+            <h2 class="text-xl sm:text-2xl font-black text-white group-hover:text-indigo-300 transition">
+              アーケード音声早押しクイズ
+            </h2>
+          </div>
+
+          <p class="text-xs text-slate-400 leading-relaxed">
+            ボタンを押して声で答える本格クイズ！<br>
+            <strong>『みんはや風』『漢字でGO!風』『QMA風』</strong>の3大アーケードスキンをリアルタイム切替可能。Gemini AIクイズ自動生成機能も搭載。
+          </p>
+
+          <!-- Modes / Packs -->
+          <div class="space-y-1.5 pt-2">
+            <div class="text-[11px] font-bold text-slate-400">収録カテゴリ（全4種）:</div>
+            <div class="flex flex-wrap gap-1.5">
+              <span class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[11px] border border-slate-700">🏛️ 世界遺産</span>
+              <span class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[11px] border border-slate-700">🌍 世界の地理</span>
+              <span class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[11px] border border-slate-700">💡 一般教養</span>
+              <span class="px-2 py-0.5 rounded-md bg-rose-950/80 text-rose-300 text-[11px] border border-rose-800/80 font-bold">✨ 海外地名・文字</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-6 relative z-10">
+          <a href="voice_answer_quiz.html" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/30 group-hover:shadow-indigo-500/50 transition">
+            <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+            <span>クイズを起動する</span>
+            <i data-lucide="arrow-right" class="w-4 h-4 ml-1 transition group-hover:translate-x-1"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Card 2: GEO地名でGO! -->
+      <div class="arcade-card relative rounded-3xl bg-slate-900/90 border-2 border-amber-500/40 hover:border-amber-400 p-6 flex flex-col justify-between overflow-hidden shadow-xl shadow-amber-950/40 group">
+        <div class="absolute -top-12 -right-12 w-36 h-36 bg-amber-500/20 rounded-full blur-2xl group-hover:bg-amber-500/30 transition"></div>
+        <div class="space-y-4 relative z-10">
+          <div class="flex items-center justify-between">
+            <div class="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-inner">
+              <i data-lucide="compass" class="w-6 h-6"></i>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+              完全統合版
+            </span>
+          </div>
+
+          <div>
+            <div class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1">GeoGuessr Language Dojo</div>
+            <h2 class="text-xl sm:text-2xl font-black text-white group-hover:text-amber-300 transition">
+              GEO地名でGO! 完全統合版
+            </h2>
+          </div>
+
+          <p class="text-xs text-slate-400 leading-relaxed">
+            世界の道路標識や現地文字を読み解いて撃破！<br>
+            タイ文字キロポスト・キリル・ギリシャ・アラビア・ハングル等のコースを一本に集約。音声入力・選択肢アシスト付き。
+          </p>
+
+          <!-- Modes / Packs -->
+          <div class="space-y-1.5 pt-2">
+            <div class="text-[11px] font-bold text-slate-400">収録道場（全6コース）:</div>
+            <div class="flex flex-wrap gap-1.5">
+              <span class="px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 text-[11px] border border-emerald-800/80">🇹🇭 タイ文字15都市</span>
+              <span class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[11px] border border-slate-700">🇷🇺 キリル幹線都市</span>
+              <span class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[11px] border border-slate-700">🇬🇷 ギリシャ・東欧</span>
+              <span class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[11px] border border-slate-700">🇦🇪 アジア・アラビア</span>
+              <span class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[11px] border border-slate-700">🌐 世界厳選</span>
+              <span class="px-2 py-0.5 rounded-md bg-amber-950/80 text-amber-300 text-[11px] border border-amber-800/80 font-bold">🔥 総合サバイバル</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-6 relative z-10">
+          <a href="geo_go.html" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-amber-600 via-amber-500 to-red-600 hover:from-amber-500 hover:to-red-500 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-600/30 group-hover:shadow-amber-500/50 transition">
+            <i data-lucide="swords" class="w-4 h-4"></i>
+            <span>道場に出陣する</span>
+            <i data-lucide="arrow-right" class="w-4 h-4 ml-1 transition group-hover:translate-x-1"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Card 3: Thai Short Theater -->
+      <div class="arcade-card relative rounded-3xl bg-slate-900/90 border-2 border-emerald-500/40 hover:border-emerald-400 p-6 flex flex-col justify-between overflow-hidden shadow-xl shadow-emerald-950/40 group">
+        <div class="absolute -top-12 -right-12 w-36 h-36 bg-emerald-500/20 rounded-full blur-2xl group-hover:bg-emerald-500/30 transition"></div>
+        <div class="space-y-4 relative z-10">
+          <div class="flex items-center justify-between">
+            <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-inner">
+              <i data-lucide="smartphone" class="w-6 h-6"></i>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              音声解説つき
+            </span>
+          </div>
+
+          <div>
+            <div class="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-1">Shorts Style Viewer (9:16)</div>
+            <h2 class="text-xl sm:text-2xl font-black text-white group-hover:text-emerald-300 transition">
+              タイ県名 ショートシアター
+            </h2>
+          </div>
+
+          <p class="text-xs text-slate-400 leading-relaxed">
+            スマホ縦型ショート動画スタイルでタイ県名の読み方をサクッと攻略！<br>
+            <strong>ずんだもん等の音声読み上げ</strong>と連動して、単語のパーツ分解（ナコーン＝都市、ブリー＝町など）を楽しく学べます。
+          </p>
+
+          <!-- Modes / Packs -->
+          <div class="space-y-1.5 pt-2">
+            <div class="text-[11px] font-bold text-slate-400">特徴:</div>
+            <div class="flex flex-wrap gap-1.5">
+              <span class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[11px] border border-slate-700">📱 縦型9:16 UI</span>
+              <span class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[11px] border border-slate-700">🗣️ 合成音声ナレーション</span>
+              <span class="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-[11px] border border-slate-700">🧩 単語パーツ分解</span>
+              <span class="px-2 py-0.5 rounded-md bg-emerald-950/80 text-emerald-300 text-[11px] border border-emerald-800/80">⚡ 自動スライド再生</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-6 relative z-10">
+          <a href="thai_short_player.html" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-500 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/30 group-hover:shadow-emerald-500/50 transition">
+            <i data-lucide="clapperboard" class="w-4 h-4"></i>
+            <span>動画シアターを再生</span>
+            <i data-lucide="arrow-right" class="w-4 h-4 ml-1 transition group-hover:translate-x-1"></i>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Features & How to Play Section -->
+    <div class="rounded-3xl bg-slate-900/60 border border-slate-800/80 p-6 sm:p-8 backdrop-blur space-y-6">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+          <i data-lucide="info" class="w-5 h-5"></i>
+        </div>
+        <h3 class="text-lg sm:text-xl font-bold text-white">遊び方と動作環境について</h3>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs sm:text-sm text-slate-400">
+        <div class="space-y-2">
+          <div class="font-bold text-white flex items-center gap-2">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+            マイクを許可して声で解答
+          </div>
+          <p class="leading-relaxed">
+            Google Chrome等のWeb Speech API対応ブラウザで開いてマイクを許可すると、ボタンを押して声で答えるだけで正誤判定されます。
+          </p>
+        </div>
+
+        <div class="space-y-2">
+          <div class="font-bold text-white flex items-center gap-2">
+            <i data-lucide="keyboard" class="w-4 h-4 text-cyan-400"></i>
+            キーボード＆テキスト入力も対応
+          </div>
+          <p class="leading-relaxed">
+            声を出せない静かな場所でも大丈夫！スペースキーで早押し、キーボードタイピングや4択アシストボタンで手軽にプレイできます。
+          </p>
+        </div>
+
+        <div class="space-y-2">
+          <div class="font-bold text-white flex items-center gap-2">
+            <i data-lucide="sparkles" class="w-4 h-4 text-amber-400"></i>
+            サーバー不要の単一ファイル完結
+          </div>
+          <p class="leading-relaxed">
+            HTMLファイルを開くだけで即座に動作します。GitHub Pagesに公開すれば、URLをシェアしてスマホや友達と一緒に遊べます。
+          </p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 bg-slate-950/70 py-6 text-center text-xs text-slate-500 mt-auto">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div>
+        GEMINI QUIZ ARCADE &copy; 2026 - Powered by Web Speech & Web Audio API
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="voice_answer_quiz.html" class="hover:text-slate-300 transition">早押しクイズ</a>
+        <span>•</span>
+        <a href="geo_go.html" class="hover:text-slate-300 transition">GEO地名でGO!</a>
+        <span>•</span>
+        <a href="thai_short_player.html" class="hover:text-slate-300 transition">タイ県名シアター</a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    lucide.createIcons();
+  </script>
+</body>
+</html>

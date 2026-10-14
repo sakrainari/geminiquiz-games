@@ -107,6 +107,23 @@
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
 
+<!-- Global Portal Navigation Bar -->
+<div class="bg-slate-900/95 border-b border-slate-800 backdrop-blur px-4 py-2.5 flex items-center justify-between text-xs sticky top-0 z-50 text-white">
+  <div class="flex items-center gap-3">
+    <a href="index.html" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold transition">
+      <span>◀</span>
+      <span>ゲーム一覧ポータルに戻る</span>
+    </a>
+    <span class="text-slate-600 hidden sm:inline">|</span>
+    <span class="text-slate-300 font-bold hidden sm:inline">🎤 アーケード音声早押しクイズ</span>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="geo_go.html" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition">🗺️ GEO地名でGO!</a>
+    <a href="thai_short_player.html" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition">🎬 タイ県名シアター</a>
+  </div>
+</div>
+
+
     <!-- Top Header -->
     <header class="sticky top-0 z-30 backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800">
         <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
@@ -265,7 +282,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                     <!-- Category 1: World Heritage (Level 2) -->
                     <div class="group relative rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl hover:border-amber-500/50 dark:hover:border-amber-500/50 transition-all flex flex-col justify-between">
                         <div>
@@ -309,6 +326,31 @@
                             </p>
                         </div>
                         <button onclick="app.startBuiltInQuiz('geography')" class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 transition-all">
+                            <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+                            <span>このモードで挑戦</span>
+                        </button>
+                    </div>
+
+                    
+                    <!-- Category 4: World Scripts & Geo Sign -->
+                    <div class="group relative rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl hover:border-rose-500/50 dark:hover:border-rose-500/50 transition-all flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                                    <i data-lucide="globe-2" class="w-6 h-6"></i>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300">
+                                    タイ・キリル・アラビア等
+                                </span>
+                            </div>
+                            <h4 class="text-lg font-extrabold mb-2 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
+                                海外地名・世界の文字
+                            </h4>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
+                                「กรุงเทพมหานคร」「Москва」「부산」「دبي」など、現地文字で書かれた都市名を声に出して撃破！
+                            </p>
+                        </div>
+                        <button onclick="app.startBuiltInQuiz('geosign')" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 active:scale-[0.99] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-rose-600/20 transition-all">
                             <i data-lucide="play" class="w-4 h-4 fill-current"></i>
                             <span>このモードで挑戦</span>
                         </button>
@@ -780,6 +822,83 @@
          * - explanation: Detailed explanation read aloud or displayed after answering
          */
         const BUILTIN_QUIZZES = {
+
+            geosign: {
+                title: "海外地名・世界の文字クイズ",
+                questions: [
+                    {
+                        q: "タイの首都で、現地文字では「กรุงเทพมหานคร」と表記される都市はどこでしょう？",
+                        answer: "バンコク",
+                        aliases: ["バンコク", "ばんこく", "クルンテープ", "くるんてーぷ", "bangkok"],
+                        hint: "現地の正式名称の冒頭は「クルンテープ」です。",
+                        explanation: "タイの首都バンコクの現地名は「クルンテープ・マハーナコーン」と呼ばれ、道路標識等には「กรุงเทพฯ」と表記されます。"
+                    },
+                    {
+                        q: "タイ北部最大の古都で、ランナー王国の都として栄え「เชียงใหม่」と表記される都市はどこでしょう？",
+                        answer: "チェンマイ",
+                        aliases: ["チェンマイ", "ちぇんまい", "チエンマイ", "chiang mai"],
+                        hint: "「新しい街」という意味を持つタイ北部の美しい古都です。",
+                        explanation: "「เชียง（チェン=街）」と「ใหม่（マイ=新しい）」で構成されるタイ第2の都市です。"
+                    },
+                    {
+                        q: "タイの世界的リゾート都市で、現地標識に「พัทยา」と記される都市はどこでしょう？",
+                        answer: "パタヤ",
+                        aliases: ["パタヤ", "ぱたや", "パッタヤー", "pattaya"],
+                        hint: "バンコクから車で約2時間の東海岸にある世界的歓楽・ビーチリゾートです。",
+                        explanation: "タイ湾に面した国際的リゾート都市で、「พัทยา（パッタヤー）」と読みます。"
+                    },
+                    {
+                        q: "ロシアの首都で、キリル文字で「Москва」と表記される都市はどこでしょう？",
+                        answer: "モスクワ",
+                        aliases: ["モスクワ", "もすくわ", "moscow", "moskva"],
+                        hint: "赤の広場やクレムリン宮殿で知られます。キリル文字の「В」はV、「р」はRの発音です。",
+                        explanation: "キリル文字「Москва」はM-O-S-K-V-Aと発音し、モスクワを指します。"
+                    },
+                    {
+                        q: "ロシア極東の港湾都市で、シベリア鉄道の終点。「Владивосток」と表記される都市はどこでしょう？",
+                        answer: "ウラジオストク",
+                        aliases: ["ウラジオストク", "うらじおすとく", "ウラジオ", "vladivostok"],
+                        hint: "「東方を支配する町」という意味を持つ、日本に一番近いロシアの港町です。",
+                        explanation: "「Владивосток」はウラジ（支配する）＋ボストーク（東方）という語源を持ちます。"
+                    },
+                    {
+                        q: "ギリシャの首都で、パルテノン神殿がそびえ、現代ギリシャ文字で「Αθήνα」と表記される都市はどこでしょう？",
+                        answer: "アテネ",
+                        aliases: ["アテネ", "あてね", "アテナイ", "athens", "athina"],
+                        hint: "古代ギリシャ文明の中心地で、女神アテナに由来します。「θ」はthの発音です。",
+                        explanation: "現代ギリシャ語では「アシーナ（Athina）」と発音され、古代の守護神アテナに因みます。"
+                    },
+                    {
+                        q: "ギリシャ第2の都市で、マケドニア地方の中心地。「Θεσσαλονίκη」と表記される都市はどこでしょう？",
+                        answer: "テッサロニキ",
+                        aliases: ["テッサロニキ", "てっさろにき", "サロニカ", "thessaloniki"],
+                        hint: "アレクサンドロス大王の異母妹の名前に由来するエーゲ海沿いの大都市です。",
+                        explanation: "「Θεσσαλονίκη」はテッサロニキと読み、世界遺産の初期キリスト教建築群で知られます。"
+                    },
+                    {
+                        q: "韓国第2の都市で、最大の港湾都市。ハングルで「부산」と表記される都市はどこでしょう？",
+                        answer: "釜山",
+                        aliases: ["釜山", "プサン", "ぷさん", "ぶさん", "busan"],
+                        hint: "「ㅂ（b/p）」と「ㅜ（u）」、そして「ㅅ（s）」と「ㅏ（a）」と「ㄴ（n）」の組み合わせです。",
+                        explanation: "「부산（釜山/プサン）」は朝鮮半島南東部に位置する韓国最大の貿易港です。"
+                    },
+                    {
+                        q: "アラブ首長国連邦（UAE）最大の都市で、超高層ビル「ブルジュ・ハリファ」が立つ、アラビア文字で「دبي」と表記される都市はどこでしょう？",
+                        answer: "ドバイ",
+                        aliases: ["ドバイ", "どばい", "dubai"],
+                        hint: "アラビア文字は右から左へ読みます。短い3文字で表されます。",
+                        explanation: "「دبي」は右からダール(D)・バー(B)・ヤー(Y)の組み合わせで「ドバイ」と読みます。"
+                    },
+                    {
+                        q: "エジプトの首都で、ナイル川下流に位置するアフリカ・中東最大のメガシティ。「القاهرة」と表記される都市はどこでしょう？",
+                        answer: "カイロ",
+                        aliases: ["カイロ", "かいろ", "cairo", "アルカーヒラ"],
+                        hint: "アラビア語の現地名は「アル・カーヒラ（勝利者）」という意味です。",
+                        explanation: "「القاهرة（アル・カーヒラ）」はエジプトの首都カイロのアラビア語表記です。"
+                    }
+                ]
+            },
+
             heritage: {
                 title: "世界遺産クイズ（2級対応）",
                 questions: [

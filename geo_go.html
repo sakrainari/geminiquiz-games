@@ -1,0 +1,1944 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GEO地名でGO! 完全統合版 - 世界の現地文字・標識撃破道場</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700;900&family=Noto+Serif+JP:wght@700;900&family=Noto+Sans:wght@700;900&family=Noto+Sans+Arabic:wght@700&family=Noto+Sans+Thai:wght@700&family=Noto+Sans+KR:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #0f0a0a;
+    --accent-gold: #f59e0b;
+    --accent-red: #dc2626;
+  }
+  body {
+    font-family: 'Noto Sans JP', 'Noto Sans', 'Noto Sans KR', 'Noto Sans Thai', 'Noto Sans Arabic', sans-serif;
+    background-color: var(--bg-primary);
+    color: #f8fafc;
+    overflow-x: hidden;
+    user-select: none;
+  }
+  .serif-heavy {
+    font-family: 'Noto Serif JP', serif;
+  }
+  /* 集中線エフェクト（漢字でGO!風） */
+  .speed-lines {
+    background: repeating-conic-gradient(
+      from 0deg,
+      rgba(255, 255, 255, 0.03) 0deg 2deg,
+      transparent 2deg 7deg
+    );
+    animation: spin-slow 40s linear infinite;
+  }
+  @keyframes spin-slow {
+    from { transform: rotate(0deg) scale(1.6); }
+    to { transform: rotate(360deg) scale(1.6); }
+  }
+  /* 迫りくる文字アニメーション */
+  @keyframes zoom-pressure {
+    0% { transform: scale(0.85); opacity: 0; }
+    15% { transform: scale(1.0); opacity: 1; }
+    100% { transform: scale(1.18); opacity: 1; }
+  }
+  .pressure-sign {
+    animation: zoom-pressure 10s ease-out forwards;
+  }
+  /* 撃破スラッシュ＆シェイク */
+  @keyframes shake-hard {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    20% { transform: translate(-10px, 6px) rotate(-2deg); }
+    40% { transform: translate(10px, -6px) rotate(2deg); }
+    60% { transform: translate(-8px, -4px) rotate(-1deg); }
+    80% { transform: translate(8px, 4px) rotate(1deg); }
+  }
+  .shake-effect {
+    animation: shake-hard 0.38s cubic-bezier(.36,.07,.19,.97) both;
+  }
+  @keyframes stamp-pop {
+    0% { transform: scale(2.8) rotate(-12deg); opacity: 0; }
+    60% { transform: scale(0.92) rotate(-6deg); opacity: 1; }
+    100% { transform: scale(1) rotate(-6deg); opacity: 1; }
+  }
+  .stamp-anim {
+    animation: stamp-pop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  }
+  /* 道路標識スタイル */
+  .sign-russian-blue {
+    background: linear-gradient(180deg, #0039a6 0%, #002670 100%);
+    border: 5px solid #ffffff;
+    box-shadow: 0 0 0 4px #0039a6, 0 20px 50px rgba(0,0,0,0.85);
+    color: #ffffff;
+  }
+  .sign-russian-white {
+    background: #ffffff;
+    border: 5px solid #1e293b;
+    box-shadow: 0 0 0 4px #ffffff, 0 20px 50px rgba(0,0,0,0.85);
+    color: #0f172a;
+  }
+  .sign-euro-green {
+    background: linear-gradient(180deg, #006847 0%, #004d35 100%);
+    border: 5px solid #ffffff;
+    box-shadow: 0 0 0 4px #006847, 0 20px 50px rgba(0,0,0,0.85);
+    color: #ffffff;
+  }
+  .sign-greek-blue {
+    background: linear-gradient(180deg, #003399 0%, #002266 100%);
+    border: 5px solid #ffcc00;
+    box-shadow: 0 0 0 4px #003399, 0 20px 50px rgba(0,0,0,0.85);
+    color: #ffcc00;
+  }
+  .sign-korea-green {
+    background: linear-gradient(180deg, #005c36 0%, #004226 100%);
+    border: 5px solid #ffffff;
+    box-shadow: 0 0 0 4px #005c36, 0 20px 50px rgba(0,0,0,0.85);
+    color: #ffffff;
+  }
+  .sign-mideast-brown {
+    background: linear-gradient(180deg, #1e3a8a 0%, #172554 100%);
+    border: 5px solid #f8fafc;
+    box-shadow: 0 0 0 4px #1e3a8a, 0 20px 50px rgba(0,0,0,0.85);
+    color: #ffffff;
+  }
+  /* 危機ビネット */
+  .crisis-vignette {
+    box-shadow: inset 0 0 90px rgba(220, 38, 38, 0.75);
+    animation: pulse-danger 0.6s infinite alternate;
+  }
+  @keyframes pulse-danger {
+    from { opacity: 0.4; }
+    to { opacity: 1; }
+  }
+
+  .sign-thai-green {
+    background: linear-gradient(180deg, #065f46 0%, #047857 100%);
+    border: 4px solid #ffffff;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+  }
+  .sign-thai-kmpost {
+    background: #f8fafc;
+    color: #0f172a;
+    border: 4px solid #0f172a;
+    border-radius: 40px 40px 8px 8px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7);
+  }
+
+</style>
+</head>
+<body class="min-h-screen flex flex-col relative overflow-hidden">
+
+<!-- Global Portal Navigation Bar -->
+<div class="bg-zinc-950/95 border-b border-zinc-800 backdrop-blur px-4 py-2.5 flex items-center justify-between text-xs sticky top-0 z-50">
+  <div class="flex items-center gap-3">
+    <a href="index.html" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-amber-400 font-bold transition">
+      <span>◀</span>
+      <span>ゲーム一覧ポータルに戻る</span>
+    </a>
+    <span class="text-zinc-600 hidden sm:inline">|</span>
+    <span class="text-zinc-300 font-bold hidden sm:inline">GEO地名でGO! 完全統合版</span>
+  </div>
+  <div class="flex items-center gap-2">
+    <a href="voice_answer_quiz.html" class="px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 transition">🎤 音声早押しクイズ</a>
+    <a href="thai_short_player.html" class="px-2.5 py-1 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-300 transition">🎬 タイ県名シアター</a>
+  </div>
+</div>
+
+
+<!-- 背景集中線レイヤー -->
+<div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+  <div class="speed-lines w-full h-full"></div>
+  <div class="absolute inset-0 bg-radial from-transparent via-black/40 to-black/90"></div>
+</div>
+
+<!-- 危機演出レイヤー -->
+<div id="crisisOverlay" class="fixed inset-0 pointer-events-none z-20 hidden crisis-vignette"></div>
+
+<!-- ヘッダー -->
+<header class="relative z-30 border-b-2 border-amber-500/40 bg-zinc-950/90 backdrop-blur-md px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+  <div class="flex items-center gap-3">
+    <button onclick="app.showHome()" class="flex items-center gap-2 group text-left">
+      <div class="bg-gradient-to-br from-red-600 to-amber-600 px-2.5 py-1 rounded border border-amber-300 shadow-lg">
+        <span class="serif-heavy font-black text-lg tracking-wider text-white">GEO地名でGO!</span>
+      </div>
+      <div class="hidden sm:block">
+        <div class="text-xs text-amber-400 font-bold tracking-widest">GEOGUESSR SCRIPT BREAKER</div>
+        <div class="text-[11px] text-zinc-400">現地文字・道路標識 読み撃破道場</div>
+      </div>
+    </button>
+  </div>
+
+  <div class="flex items-center gap-2 flex-wrap">
+    <!-- 自動進行トグル -->
+    <button id="btnAutoNext" onclick="app.toggleAutoNext()" class="px-2.5 py-1 rounded text-xs font-bold border border-zinc-700 bg-zinc-900 text-zinc-300 hover:border-amber-500 transition">
+      自動進行: OFF
+    </button>
+    <!-- 効果音トグル -->
+    <button id="btnSound" onclick="app.toggleSound()" class="px-2.5 py-1 rounded text-xs font-bold border border-amber-500/60 bg-amber-950/40 text-amber-300 hover:bg-amber-900/50 transition">
+      効果音: ON
+    </button>
+    <!-- 文字対応表モーダル -->
+    <button onclick="app.toggleCheatSheet()" class="px-2.5 py-1 rounded text-xs font-bold border border-cyan-500/60 bg-cyan-950/40 text-cyan-300 hover:bg-cyan-900/50 transition">
+      文字解読チャート
+    </button>
+    <!-- PiPミニ窓化ボタン -->
+    <button onclick="app.openPiP()" class="px-2.5 py-1 rounded text-xs font-bold border border-purple-500/60 bg-purple-950/40 text-purple-300 hover:bg-purple-900/50 transition" title="別ウィンドウ作業中も最前面に固定">
+      最前面ミニ窓
+    </button>
+  </div>
+</header>
+
+<!-- メインコンテナ -->
+<main id="mainContainer" class="relative z-10 flex-1 flex flex-col items-center justify-center p-4 max-w-5xl w-full mx-auto">
+
+  <!-- ================= ホーム画面 ================= -->
+  <section id="screenHome" class="w-full space-y-6">
+    <div class="text-center space-y-2 py-2">
+      <div class="inline-block px-3 py-0.5 rounded-full bg-red-950/80 border border-red-500/50 text-red-300 text-xs font-bold tracking-widest">
+        GEOLANGUAGE TRAINING PROTOTYPE
+      </div>
+      <h1 class="serif-heavy text-4xl sm:text-6xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white via-amber-200 to-amber-500 drop-shadow-[0_4px_12px_rgba(245,158,11,0.4)]">
+        GEO地名でGO!
+      </h1>
+      <p class="text-sm sm:text-base text-zinc-300 max-w-2xl mx-auto">
+        目の前の道路標識に書いてあるのに読めない…を撲滅！<br>
+        迫りくる現地文字（キリル・ギリシャ・東欧・ハングル・タイ・アラビア）の地名を<strong>声（またはタイピング）</strong>で読み上げて撃破せよ！
+      </p>
+    </div>
+
+    <!-- ゲーム設定バー -->
+    <div class="bg-zinc-900/90 border border-zinc-700/80 rounded-xl p-4 grid grid-cols-1 sm:grid-cols-3 gap-4 shadow-xl">
+      <div>
+        <label class="block text-xs font-bold text-amber-400 mb-1.5">出題スタイル</label>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button id="modeRush" onclick="app.setPlayStyle('rush')" class="py-2 px-3 rounded font-bold text-xs border border-amber-500 bg-amber-600/30 text-white">
+            漢字でGO! 迫撃モード
+          </button>
+          <button id="modeBuzzer" onclick="app.setPlayStyle('buzzer')" class="py-2 px-3 rounded font-bold text-xs border border-zinc-700 bg-zinc-800 text-zinc-400">
+            1文字ずつ早押し
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-amber-400 mb-1.5">制限時間（1問あたり）</label>
+        <div class="grid grid-cols-3 gap-1.5">
+          <button onclick="app.setTimeLimit(6)" id="time6" class="py-2 rounded font-bold text-xs border border-zinc-700 bg-zinc-800 text-zinc-400">鬼 (6秒)</button>
+          <button onclick="app.setTimeLimit(10)" id="time10" class="py-2 rounded font-bold text-xs border border-amber-500 bg-amber-600/30 text-white">標準 (10秒)</button>
+          <button onclick="app.setTimeLimit(15)" id="time15" class="py-2 rounded font-bold text-xs border border-zinc-700 bg-zinc-800 text-zinc-400">じっくり (15秒)</button>
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-bold text-amber-400 mb-1.5">スタート時のヒント表示</label>
+        <div class="grid grid-cols-2 gap-1.5">
+          <button id="hintOff" onclick="app.setInitialHint(false)" class="py-2 px-3 rounded font-bold text-xs border border-amber-500 bg-amber-600/30 text-white">
+            ガチ実戦 (標識のみ)
+          </button>
+          <button id="hintOn" onclick="app.setInitialHint(true)" class="py-2 px-3 rounded font-bold text-xs border border-zinc-700 bg-zinc-800 text-zinc-400">
+            練習 (文字分解つき)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- コース選択 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5" id="packGrid">
+      <!-- JSで動的生成 -->
+    </div>
+  </section>
+
+  <!-- ================= バトル画面 ================= -->
+  <section id="screenBattle" class="w-full hidden space-y-4">
+    <!-- ステータスバー -->
+    <div class="bg-zinc-950/90 border-2 border-zinc-800 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+      <div class="flex items-center gap-4">
+        <div>
+          <div class="text-[10px] text-zinc-400 font-bold">STAGE / QUESTION</div>
+          <div class="text-lg font-black text-amber-400" id="hudProgress">1 / 8</div>
+        </div>
+        <div>
+          <div class="text-[10px] text-zinc-400 font-bold">LIFE (残機)</div>
+          <div class="flex items-center gap-1 text-lg font-black text-red-500" id="hudLives"></div>
+        </div>
+        <div>
+          <div class="text-[10px] text-zinc-400 font-bold">COMBO / SCORE</div>
+          <div class="text-lg font-black text-white"><span id="hudCombo" class="text-amber-400">0</span>連撃 / <span id="hudScore">0</span>pt</div>
+        </div>
+      </div>
+
+      <!-- 残り時間ゲージ -->
+      <div class="flex-1 min-w-[200px] max-w-md">
+        <div class="flex justify-between text-xs font-bold mb-1">
+          <span id="timerLabel" class="text-amber-300">TIME LIMIT</span>
+          <span id="timerText" class="font-mono text-base font-black text-white">10.0s</span>
+        </div>
+        <div class="w-full h-3.5 bg-zinc-800 rounded-full overflow-hidden border border-zinc-700 p-0.5">
+          <div id="timerBar" class="h-full bg-gradient-to-r from-red-600 via-amber-500 to-emerald-400 rounded-full transition-all duration-100" style="width: 100%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- メイン道路標識ステージ -->
+    <div id="stageArena" class="relative min-h-[290px] sm:min-h-[340px] bg-gradient-to-b from-zinc-900/80 to-black/95 border-2 border-amber-500/40 rounded-2xl flex flex-col items-center justify-center p-6 overflow-hidden shadow-2xl">
+      
+      <!-- 上部メタタグ（文字体系・地域ヒント） -->
+      <div class="absolute top-3 left-4 right-4 flex items-center justify-between text-xs">
+        <span id="signScriptBadge" class="px-2.5 py-1 rounded bg-zinc-800/90 border border-zinc-600 text-zinc-200 font-bold">
+          キリル文字
+        </span>
+        <div class="flex items-center gap-2">
+          <button onclick="app.speakNative()" class="px-2.5 py-1 rounded bg-zinc-800/90 hover:bg-zinc-700 border border-zinc-600 text-amber-300 font-bold transition">
+            現地発音を聞く
+          </button>
+          <button onclick="app.revealHint()" id="btnRevealHint" class="px-2.5 py-1 rounded bg-amber-950/80 hover:bg-amber-900 border border-amber-500/60 text-amber-300 font-bold transition">
+            1文字分解ヒント (H)
+          </button>
+        </div>
+      </div>
+
+      <!-- 迫りくる道路標識本体 -->
+      <div id="roadSignWrapper" class="my-6 flex flex-col items-center justify-center max-w-full">
+        <div id="roadSignBox" class="sign-russian-blue px-8 py-5 sm:px-12 sm:py-7 rounded-xl text-center transition-all">
+          <div class="text-[11px] uppercase tracking-widest opacity-80 font-bold mb-1" id="signHeaderSub">ROAD SIGN / CITY ENTRY</div>
+          <div id="signMainText" class="text-4xl sm:text-6xl md:text-7xl font-black tracking-wide break-all leading-tight">
+            Москва
+          </div>
+          <div id="signDistance" class="mt-2 text-xs sm:text-sm font-mono opacity-85 border-t border-current/20 pt-1.5 flex items-center justify-between gap-6">
+            <span>↑ A-101</span>
+            <span>42 km</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1文字ずつの分解ヒントバー（練習モードまたはヒントボタン押下時） -->
+      <div id="charBreakdownBox" class="hidden w-full max-w-2xl bg-zinc-950/90 border border-amber-500/40 rounded-lg p-2.5 text-center">
+        <div class="text-[11px] text-amber-400 font-bold mb-1">【1文字ずつの音対応】</div>
+        <div id="charBreakdownContent" class="flex flex-wrap items-center justify-center gap-1.5 text-sm font-mono"></div>
+      </div>
+
+      <!-- 早押しモード時のボタンオーバーレイ -->
+      <div id="buzzerOverlay" class="hidden mt-3">
+        <button onclick="app.triggerBuzzer()" class="px-8 py-3 rounded-full bg-gradient-to-b from-red-500 to-red-700 border-4 border-red-300 text-white font-black text-lg shadow-[0_6px_0_#7f1d1d,0_12px_20px_rgba(0,0,0,0.8)] active:translate-y-1 transition">
+          PUSH!! 読めた！（Space）
+        </button>
+      </div>
+
+      <!-- 撃破・失敗スタンプオーバーレイ -->
+      <div id="judgeStampOverlay" class="hidden absolute inset-0 bg-black/65 backdrop-blur-[2px] flex flex-col items-center justify-center p-4 z-20">
+        <div id="judgeStampBadge" class="stamp-anim px-8 py-3 border-4 rounded-xl serif-heavy text-4xl sm:text-6xl font-black tracking-widest shadow-2xl">
+          撃破!!
+        </div>
+      </div>
+    </div>
+
+    <!-- 音声＆テキスト回答コントロールパネル -->
+    <div class="bg-zinc-900/95 border border-zinc-700 rounded-xl p-4 space-y-3 shadow-xl">
+      <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <!-- マイクボタン＆リアルタイム音声波形 -->
+        <button id="btnMic" onclick="app.toggleMic()" class="flex items-center justify-center gap-2.5 px-5 py-3 rounded-lg font-black text-sm border-2 border-red-500 bg-red-600/20 text-red-200 hover:bg-red-600/30 transition shrink-0">
+          <span id="micDot" class="w-3 h-3 rounded-full bg-red-500 animate-ping"></span>
+          <span id="micStatusText">マイク待機中 (声で即答)</span>
+        </button>
+
+        <!-- 音声認識のリアルタイムプレビュー -->
+        <div class="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3.5 py-2 flex items-center justify-between">
+          <div>
+            <div class="text-[10px] text-zinc-500 font-bold">音声認識リアルタイム判定（発話中はタイマー延長）</div>
+            <div id="voiceInterimText" class="text-sm sm:text-base font-bold text-amber-300 min-h-[1.5rem]">
+              マイクに向かって都市名を日本語読みで発声してください...
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- タイピング入力（併用可能）＆パスボタン -->
+      <form onsubmit="app.handleTextSubmit(event)" class="flex gap-2">
+        <input type="text" id="textAnswerInput" autocomplete="off" placeholder="タイピングで回答も可能（ひらがな・カタカナ・ローマ字対応）..." class="flex-1 bg-zinc-950 border border-zinc-700 focus:border-amber-500 rounded-lg px-4 py-2.5 text-white font-bold text-base outline-none">
+        <button type="submit" class="px-5 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-black font-black text-sm transition shrink-0">
+          回答する (Enter)
+        </button>
+        <button type="button" onclick="app.giveUpQuestion()" class="px-4 py-2.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold text-sm border border-zinc-600 transition shrink-0">
+          パス (Esc)
+        </button>
+      </form>
+    </div>
+
+    <!-- 解答後の詳細解説＆文字解剖パネル -->
+    <div id="explanationPanel" class="hidden bg-zinc-900 border-2 border-amber-500/70 rounded-xl p-5 space-y-4 shadow-2xl">
+      <div class="flex flex-wrap items-start justify-between gap-4 border-b border-zinc-800 pb-3">
+        <div>
+          <div class="flex items-center gap-2">
+            <span id="expResultBadge" class="px-2.5 py-0.5 rounded text-xs font-black bg-emerald-600 text-white">CLEAR</span>
+            <span id="expCountryBadge" class="text-sm font-bold text-amber-300">ロシア連邦（首都）</span>
+          </div>
+          <div class="mt-1 flex items-baseline gap-3 flex-wrap">
+            <span id="expNativeTitle" class="text-3xl font-black text-white">Москва</span>
+            <span class="text-xl font-black text-amber-400">＝ <span id="expReadingTitle">モスクワ</span></span>
+            <span id="expRomanTitle" class="text-sm font-mono text-zinc-400">(Moskva / Moscow)</span>
+          </div>
+        </div>
+
+        <button onclick="app.nextQuestion()" id="btnNextQuestion" class="px-6 py-3 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-black text-base shadow-lg transition">
+          次の標識へ進む (Enter / Space) →
+        </button>
+      </div>
+
+      <!-- 1文字ずつの解剖テーブル（初見の他の地名も読めるようになる学習枠） -->
+      <div>
+        <div class="text-xs font-bold text-amber-400 mb-2">【文字ごとの発音ルール解剖（これで他の都市も読める！）】</div>
+        <div id="expCharCards" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <div class="bg-zinc-950/90 border border-zinc-800 rounded-lg p-3.5 text-sm text-zinc-200 leading-relaxed" id="expGeoNote">
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= リザルト画面 ================= -->
+  <section id="screenResult" class="w-full hidden space-y-6">
+    <div class="bg-zinc-900/95 border-2 border-amber-500/60 rounded-2xl p-6 text-center space-y-4 shadow-2xl">
+      <div class="text-xs font-bold text-amber-400 tracking-widest">TRAINING RESULT</div>
+      <h2 class="serif-heavy text-4xl font-black text-white" id="resRankTitle">師範代クラス（Sランク）</h2>
+      <div class="flex justify-center gap-8 py-2">
+        <div>
+          <div class="text-xs text-zinc-400">SCORE</div>
+          <div class="text-3xl font-black text-amber-400" id="resScore">0</div>
+        </div>
+        <div>
+          <div class="text-xs text-zinc-400">撃破数</div>
+          <div class="text-3xl font-black text-white" id="resCorrect">0 / 0</div>
+        </div>
+        <div>
+          <div class="text-xs text-zinc-400">平均撃破タイム</div>
+          <div class="text-3xl font-black text-emerald-400" id="resAvgTime">0.0s</div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap justify-center gap-3 pt-2">
+        <button onclick="app.retryWrongOnly()" id="btnRetryWrong" class="px-5 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-black text-sm transition">
+          読めなかった地名だけ特訓する
+        </button>
+        <button onclick="app.restartCurrentPack()" class="px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-black text-sm transition">
+          もう一度同じコースを走る
+        </button>
+        <button onclick="app.showHome()" class="px-5 py-2.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-bold text-sm border border-zinc-600 transition">
+          コース選択へ戻る
+        </button>
+      </div>
+    </div>
+
+    <!-- 出題履歴と文字復習リスト -->
+    <div class="bg-zinc-900/90 border border-zinc-800 rounded-xl p-4 space-y-3">
+      <h3 class="text-sm font-black text-amber-400">出題された現地地名・復習一覧</h3>
+      <div id="resHistoryList" class="space-y-2"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- 文字解読チートシート（モーダル） -->
+<div id="modalCheatSheet" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+  <div class="bg-zinc-900 border-2 border-cyan-500/60 rounded-2xl max-w-3xl w-full max-h-[85vh] overflow-y-auto p-6 space-y-4 shadow-2xl">
+    <div class="flex items-center justify-between border-b border-zinc-800 pb-3">
+      <div>
+        <h3 class="text-lg font-black text-cyan-300">GeoGuessr 現地文字・初見殺し解読チャート</h3>
+        <p class="text-xs text-zinc-400">英語のアルファベットと形が似ているのに音が違う「偽の友（False Friends）」を中心に覚えよう！</p>
+      </div>
+      <button onclick="app.toggleCheatSheet()" class="px-3 py-1 rounded bg-zinc-800 text-zinc-300 font-bold text-sm hover:bg-zinc-700">閉じる</button>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+      <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-3.5 space-y-2">
+        <div class="font-black text-amber-400 text-sm">1. キリル文字（ロシア・ウクライナ・ブルガリア等）</div>
+        <ul class="space-y-1 text-zinc-300 font-mono">
+          <li><strong class="text-white">В в = V (ヴ)</strong> ※Bではない！（Б б が B）</li>
+          <li><strong class="text-white">Н н = N (ヌ)</strong> ※Hではない！（Х х が H/Kh）</li>
+          <li><strong class="text-white">Р р = R (ル)</strong> ※Pではない！（П п が P）</li>
+          <li><strong class="text-white">С с = S (ス)</strong> ※Kではない！</li>
+          <li><strong class="text-white">У у = U (ウ)</strong> / <strong class="text-white">Г г = G (グ)</strong></li>
+          <li><strong class="text-white">Д д = D (ド)</strong> / <strong class="text-white">Л л = L (ル)</strong></li>
+          <li><strong class="text-white">Ж ж = Zh (ジュ)</strong> / <strong class="text-white">Ш ш = Sh (シュ)</strong></li>
+          <li><strong class="text-white">Я я = Ya (ヤ)</strong> / <strong class="text-white">Ю ю = Yu (ユ)</strong></li>
+        </ul>
+      </div>
+
+      <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-3.5 space-y-2">
+        <div class="font-black text-cyan-400 text-sm">2. ギリシャ文字＆東欧特殊ラテン文字</div>
+        <ul class="space-y-1 text-zinc-300 font-mono">
+          <li><strong class="text-white">Θ θ = Th (ス/テ)</strong> / <strong class="text-white">Δ δ = D (ズ/デ)</strong></li>
+          <li><strong class="text-white">Π π = P (プ)</strong> / <strong class="text-white">Ρ ρ = R (ル)</strong> / <strong class="text-white">Σ σ = S (ス)</strong></li>
+          <li><strong class="text-white">Μπ = B (ブ)</strong> / <strong class="text-white">Ντ = D (ド)</strong> ※ギリシャ特有の合字</li>
+          <li><strong class="text-white">Ł ł (ポーランド) = W (ウ/ヴ)</strong> ※Lではない！</li>
+          <li><strong class="text-white">W w (ポーランド) = V (ヴ/フ)</strong> / <strong class="text-white">Ó ó = U (ウ)</strong></li>
+          <li><strong class="text-white">C c (東欧全般) = Ts (ツ)</strong> / <strong class="text-white">Č č, Ć ć = Ch (チ)</strong></li>
+          <li><strong class="text-white">Š š, Ş ş, Ś ś = Sh (シュ)</strong> / <strong class="text-white">Ž ž = Zh (ジュ)</strong></li>
+        </ul>
+      </div>
+
+      <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-3.5 space-y-2">
+        <div class="font-black text-emerald-400 text-sm">3. 韓国ハングル（母音と頭子音の組み合わせ）</div>
+        <ul class="space-y-1 text-zinc-300 font-mono">
+          <li><strong class="text-white">ㄱ=K/G</strong>, <strong class="text-white">ㄴ=N</strong>, <strong class="text-white">ㄷ=T/D</strong>, <strong class="text-white">ㄹ=R/L</strong>, <strong class="text-white">ㅁ=M</strong></li>
+          <li><strong class="text-white">ㅂ=P/B</strong>, <strong class="text-white">ㅅ=S</strong>, <strong class="text-white">ㅇ=無音/ng</strong>, <strong class="text-white">ㅈ=Ch/J</strong>, <strong class="text-white">ㅎ=H</strong></li>
+          <li><strong class="text-white">ㅏ=a</strong>, <strong class="text-white">ㅓ=eo(オ)</strong>, <strong class="text-white">ㅗ=o</strong>, <strong class="text-white">ㅜ=u</strong>, <strong class="text-white">ㅣ=i</strong></li>
+          <li>頻出接尾辞：<strong class="text-amber-300">시(市=シ)</strong> / <strong class="text-amber-300">도(道=ド)</strong> / <strong class="text-amber-300">군(郡=グン)</strong></li>
+        </ul>
+      </div>
+
+      <div class="bg-zinc-950 border border-zinc-800 rounded-lg p-3.5 space-y-2">
+        <div class="font-black text-purple-400 text-sm">4. アラビア文字・タイ文字の攻略コツ</div>
+        <ul class="space-y-1 text-zinc-300 font-mono">
+          <li>アラビア文字は<strong>右から左</strong>へ読む！</li>
+          <li><strong class="text-white">ا = A(長母音)</strong>, <strong class="text-white">و = W/U/O</strong>, <strong class="text-white">ي = Y/I</strong>, <strong class="text-white">ت = T</strong>, <strong class="text-white">د = D</strong>, <strong class="text-white">س = S</strong>, <strong class="text-white">م = M</strong>, <strong class="text-white">ن = N</strong></li>
+          <li>タイ文字の州・都市マーカー：<strong class="text-amber-300">เชียง (チェン)</strong>, <strong class="text-amber-300">นคร (ナコーン=都市)</strong>, <strong class="text-amber-300">บุรี (ブリー=街)</strong></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== クイズデータ（GeoGuessr頻出・現地文字地名パック） ====================
+const GEO_PACKS = [
+  {
+    id: 'thai_master',
+    title: '【特設】タイ文字・主要15都市＆キロポスト完全制覇',
+    subtitle: '北部・イサーン・中部・南部の重要拠点！「ナコーン」「ブリー」等のパーツ分解つき',
+    badge: 'イチオシ・全15都市',
+    questions: [
+      {
+        native: 'กรุงเทพมหานคร',
+        reading: 'バンコク（クルンテープ）',
+        country: 'タイ中部（首都）',
+        script: 'タイ文字（首都）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.1  85 กม.',
+        accepted: ['ばんこく', 'バンコク', 'くるんてーぷ', 'クルンテープ', 'bangkok'],
+        breakdown: [['กรุง', 'Krung(都)'], ['เทพ', 'Thep(天使)'], ['มหา', 'Maha(大)'], ['นคร', 'Nakhon(都市)']],
+        note: 'タイの標識ではBangkokは「กรุงเทพฯ」または「กรุงเทพมหานคร（クルンテープ・マハーナコーン）」と書かれます！'
+      },
+      {
+        native: 'เชียงใหม่',
+        reading: 'チェンマイ',
+        country: 'タイ北部（国道11号終点）',
+        script: 'タイ文字（北部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.11  55 กม.',
+        accepted: ['ちぇんまい', 'チェンマイ', 'chiang mai', 'chiangmai'],
+        breakdown: [['เชียง', 'Chiang(チェン)'], ['ใหม่', 'Mai(マイ＝新しい)']],
+        note: '北部最大の都市！「เชียง（チェン）」はチェンマイとチェンラーイの2大北部都市の目印です。'
+      },
+      {
+        native: 'เชียงราย',
+        reading: 'チェンラーイ',
+        country: 'タイ最北部（国道1号北端）',
+        script: 'タイ文字（北部）',
+        signStyle: 'sign-thai-kmpost',
+        distance: '↑ ทล.1  62 กม.',
+        accepted: ['ちぇんらーい', 'ちぇんらい', 'チェンラーイ', 'チェンライ', 'chiang rai'],
+        breakdown: [['เชียง', 'Chiang(チェン)'], ['ราย', 'Rai(ラーイ)']],
+        note: 'チェンマイと前半「เชียง」が同じで、後半が「ราย（ร=R + า=A + ย=Y）」なら最北部のチェンラーイです！'
+      },
+      {
+        native: 'นครสวรรค์',
+        reading: 'ナコーンサワン',
+        country: 'タイ中北部（国道1号の要衝）',
+        script: 'タイ文字（中北部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.1  110 กม.',
+        accepted: ['なこーんさわん', 'なこんさわん', 'ナコーンサワン', 'ナコンサワン', 'nakhon sawan'],
+        breakdown: [['นคร', 'Nakhon(都市)'], ['สวรรค์', 'Sawan(サワン＝天国)']],
+        note: 'バンコクから北へ向かう国道1号線で必ず出る分岐拠点。先頭の「นคร（ナコーン）」が目印！'
+      },
+      {
+        native: 'พิษณุโลก',
+        reading: 'ピッサヌローク',
+        country: 'タイ中北部（国道11号・12号交点）',
+        script: 'タイ文字（中北部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.117  128 กม.',
+        accepted: ['ぴっさぬろーく', 'ぴさぬろーく', 'ピッサヌローク', 'ピサヌローク', 'phitsanulok'],
+        breakdown: [['พิษณุ', 'Phitsanu(ピッサヌ)'], ['โลก', 'Lok(ローク)']],
+        note: '後半の「โลก（ローク）」にある背の高い母音記号「โ(o)」が視覚的なフックになります。'
+      },
+      {
+        native: 'สุโขทัย',
+        reading: 'スコータイ',
+        country: 'タイ中北部（古都）',
+        script: 'タイ文字（中北部）',
+        signStyle: 'sign-thai-kmpost',
+        distance: '↑ ทล.12  48 กม.',
+        accepted: ['すこーたい', 'すこたい', 'スコータイ', 'スコタイ', 'sukhothai'],
+        breakdown: [['สุ', 'Su(ス)'], ['โข', 'kho(コー)'], ['ทัย', 'thai(タイ)']],
+        note: '世界遺産の古都スコータイ。「สุ(ス)」＋背の高い「โ(オ)」＋「ทัย(タイ)」でリズムよく読めます。'
+      },
+      {
+        native: 'นครราชสีมา',
+        reading: 'ナコーンラーチャシーマー（コラート）',
+        country: 'タイ北東部・イサーン玄関口',
+        script: 'タイ文字（北東部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.2  145 กม.',
+        accepted: ['なこーんらーちゃしーまー', 'ナコーンラーチャシーマー', 'ナコンラチャシマ', 'こらーと', 'コラート', 'korat'],
+        breakdown: [['นคร', 'Nakhon(都市)'], ['ราช', 'Ratcha(王)'], ['สีมา', 'Sima(シーマー)']],
+        note: 'イサーン最大の拠点（通称コラート）。国道2号線の主役です！'
+      },
+      {
+        native: 'ขอนแก่น',
+        reading: 'コーンケン',
+        country: 'タイ北東部・イサーン中央',
+        script: 'タイ文字（北東部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.2  95 กม.',
+        accepted: ['こーんけん', 'こんけん', 'コーンケン', 'コンケン', 'khon kaen'],
+        breakdown: [['ขอน', 'Khon(コーン)'], ['แก่น', 'Kaen(ケン)']],
+        note: '真ん中に2本並んだ母音記号「แ(ae)」があるのがコーンケンの大きな目印です！'
+      },
+      {
+        native: 'อุดรธานี',
+        reading: 'ウドーンターニー',
+        country: 'タイ北東部・イサーン北部',
+        script: 'タイ文字（北東部）',
+        signStyle: 'sign-thai-kmpost',
+        distance: '↑ ทล.2  115 กม.',
+        accepted: ['うどーんたーにー', 'うどんたに', 'ウドーンターニー', 'ウドンタニ', 'udon thani'],
+        breakdown: [['อุ', 'U(ウ)'], ['ดร', 'don(ドーン)'], ['ธานี', 'Thani(ターニー)']],
+        note: '頭が「อุ(ウ)」でお尻が「ธานี(ターニー)」の短い方！イサーン北部の中心です。'
+      },
+      {
+        native: 'อุบลราชธานี',
+        reading: 'ウボンラーチャターニー',
+        country: 'タイ北東部・イサーン南東端',
+        script: 'タイ文字（北東部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.24  160 กม.',
+        accepted: ['うぼんらーちゃたーにー', 'うぼんらちゃたに', 'ウボンラーチャターニー', 'ウボンラチャタニ', 'ウボン', 'ubon'],
+        breakdown: [['อุบล', 'Ubon(ウボン)'], ['ราช', 'Ratcha(ラーチャ)'], ['ธานี', 'Thani(ターニー)']],
+        note: 'ウドーンターニーより長く、真ん中に「ราช（ラーチャ）」が入れば南東端のウボンラーチャターニーです！'
+      },
+      {
+        native: 'ชลบุรี',
+        reading: 'チョンブリー',
+        country: 'タイ東部（国道3号・パタヤ方面）',
+        script: 'タイ文字（東部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.3  45 กม.',
+        accepted: ['ちょんぶりー', 'ちょんぶり', 'チョンブリー', 'チョンブリ', 'chon buri', 'chonburi'],
+        breakdown: [['ชล', 'Chon(チョン)'], ['บุรี', 'Buri(ブリー＝街)']],
+        note: '音節末の「ล(L)」は「ン(n)」の音になるため、チョルではなく「チョンブリー」と読みます！'
+      },
+      {
+        native: 'กาญจนบุรี',
+        reading: 'カンチャナブリー',
+        country: 'タイ中部西端（ミャンマー国境方面）',
+        script: 'タイ文字（中部西端）',
+        signStyle: 'sign-thai-kmpost',
+        distance: '↑ ทล.323  68 กม.',
+        accepted: ['かんちゃなぶりー', 'かんちゃなぶり', 'カンチャナブリー', 'カンチャナブリ', 'kanchanaburi'],
+        breakdown: [['กาญจน', 'Kanchana(カンチャナ)'], ['บุรี', 'Buri(ブリー)']],
+        note: '先頭の「กา(カー/カン)」と末尾の「บุรี(ブリー)」のセットで即特定できます。'
+      },
+      {
+        native: 'สุราษฎร์ธานี',
+        reading: 'スラートターニー',
+        country: 'タイ南部（マレー半島中部）',
+        script: 'タイ文字（南部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.41  130 กม.',
+        accepted: ['すらーとたーにー', 'すらとたに', 'スラートターニー', 'スラタニ', 'surat thani'],
+        breakdown: [['สุ', 'Su(ス)'], ['ราษฎร์', 'rat(ラート)'], ['ธานี', 'Thani(ターニー)']],
+        note: '南部（国道4番台）の最重要ハブ都市！「สุ(ス)」で始まり「ธานี(ターニー)」で終わります。'
+      },
+      {
+        native: 'ภูเก็ต',
+        reading: 'プーケット',
+        country: 'タイ南部（アンダマン海側）',
+        script: 'タイ文字（南部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.402  25 กม.',
+        accepted: ['ぷーけっと', 'プーケット', 'phuket'],
+        breakdown: [['ภู', 'Phu(プー)'], ['เก็ต', 'ket(ケット)']],
+        note: '先頭の「ภู(Phu)」と上の小さな8の字記号「็」が目印です。'
+      },
+      {
+        native: 'หาดใหญ่',
+        reading: 'ハートヤイ（ハジャイ）',
+        country: 'タイ深南部・ソンクラー県',
+        script: 'タイ文字（深南部）',
+        signStyle: 'sign-thai-green',
+        distance: '↑ ทล.4  35 กม.',
+        accepted: ['はーとやい', 'はじゃい', 'ハートヤイ', 'ハジャイ', 'hat yai'],
+        breakdown: [['หาด', 'Hat(ハート＝浜)'], ['ใหญ่', 'Yai(ヤイ＝大きい)']],
+        note: 'マレーシア国境に近い深南部最大の都市。「ハートヤイ」「ハジャイ」どちらでも正解です！'
+      }
+    ]
+  },
+  {
+    id: 'world_mix',
+    title: 'キリル・ギリシャ・東欧・ハングル厳選コース',
+    subtitle: 'モスクワ・ウラジオストク・テッサロニキ・ウッチ・プサン等の頻出都市',
+    badge: '世界文字（8都市）',
+    questions: [
+      {
+        native: 'Владивосток',
+        reading: 'ウラジオストク',
+        country: 'ロシア極東・沿海地方',
+        script: 'キリル文字',
+        signStyle: 'sign-russian-blue',
+        distance: '↑ А-370  280 km',
+        accepted: ['うらじおすとく', 'ウラジオストク', 'うらじおすとっく', 'vladivostok'],
+        breakdown: [['Вл', 'Vl'], ['ади', 'adi'], ['восток', 'vostok(東)']],
+        note: '「восток(Vostok＝東)」で終わる構造を知っておくと一瞬で読めます。'
+      },
+      {
+        native: 'Новосибирск',
+        reading: 'ノヴォシビルスク',
+        country: 'ロシア・シベリア連邦管区',
+        script: 'キリル文字',
+        signStyle: 'sign-russian-blue',
+        distance: '↑ Р-254  310 km',
+        accepted: ['のぼしびるすく', 'のゔぉしびるすく', 'ノヴォシビルスク', 'ノボシビルスク', 'novosibirsk'],
+        breakdown: [['Ново', 'Novo(新)'], ['сибир', 'sibir(シベリア)'], ['ск', 'sk(街)']],
+        note: '「新しい＋シベリア＋街」に分解すると超簡単に読めます！'
+      },
+      {
+        native: 'Екатеринбург',
+        reading: 'エカテリンブルク',
+        country: 'ロシア・ウラル連邦管区',
+        script: 'キリル文字',
+        signStyle: 'sign-russian-blue',
+        distance: '↑ Р-242  85 km',
+        accepted: ['えかてりんぶるく', 'エカテリンブルク', 'ekaterinburg'],
+        breakdown: [['Ека', 'Yeka'], ['терин', 'terin'], ['бург', 'burg(街)']],
+        note: 'ウラル山脈の拠点都市。語末の「бург(ブルク)」は街を意味します。'
+      },
+      {
+        native: 'Θεσσαλονίκη',
+        reading: 'テッサロニキ',
+        country: 'ギリシャ北部（第2の都市）',
+        script: 'ギリシャ文字',
+        signStyle: 'sign-greek-blue',
+        distance: '↑ A1  75 km',
+        accepted: ['てっさろにき', 'テッサロニキ', 'thessaloniki'],
+        breakdown: [['Θε', 'The'], ['σσα', 'ssa'], ['λο', 'lo'], ['νίκη', 'niki']],
+        note: '先頭の「Θ(Th)」と「σ(S)」「ν(N)」が読めればギリシャ標識は攻略できます。'
+      },
+      {
+        native: 'Łódź',
+        reading: 'ウッチ',
+        country: 'ポーランド中央部',
+        script: 'ポーランド文字',
+        signStyle: 'sign-euro-green',
+        distance: '↑ A1 / A2  50 km',
+        accepted: ['うっち', 'ウッチ', 'lodz'],
+        breakdown: [['Ł', 'w(ウ)'], ['ó', 'u(ウ)'], ['dź', 'ch(ッチ)']],
+        note: 'ポーランド語の「Ł」はW（ウ）、「ó」はU（ウ）の音になるためウッチと読みます。'
+      },
+      {
+        native: 'Wrocław',
+        reading: 'ヴロツワフ',
+        country: 'ポーランド南西部',
+        script: 'ポーランド文字',
+        signStyle: 'sign-euro-green',
+        distance: '↑ A4  95 km',
+        accepted: ['ゔろつわふ', 'ぶろつわふ', 'ヴロツワフ', 'ブロツワフ', 'wroclaw'],
+        breakdown: [['Wr', 'Vr(ヴロ)'], ['oc', 'ots(ツ)'], ['ław', 'waf(ワフ)']],
+        note: '「W＝V」「c＝ツ(ts)」「ł＝W(ワ)」のポーランド3大ルールが詰まっています。'
+      },
+      {
+        native: '부산',
+        reading: 'プサン',
+        country: '韓国南東部（釜山）',
+        script: 'ハングル',
+        signStyle: 'sign-korea-green',
+        distance: '↑ 1  80 km',
+        accepted: ['ぷさん', 'プサン', '釜山', 'busan'],
+        breakdown: [['부', 'ㅂ(b/p)+ㅜ(u)=プ'], ['산', 'ㅅ(s)+ㅏ(a)+ㄴ(n)=サン']],
+        note: '2文字目の「산」は「山（サン）」を表す超頻出パーツです。'
+      },
+      {
+        native: '대전',
+        reading: 'テジョン',
+        country: '韓国中央部（大田）',
+        script: 'ハングル',
+        signStyle: 'sign-korea-green',
+        distance: '↑ 1  45 km',
+        accepted: ['てじょん', 'テジョン', '大田', 'daejeon'],
+        breakdown: [['대', 'ㄷ(d/t)+ㅐ(ae)=テ'], ['전', 'ㅈ(j)+ㅓ(eo)+ㄴ(n)=ジョン']],
+        note: '「대(大＝テ)」は「대구（大邱＝テグ）」とも1文字目が共通しています。'
+      }
+    ]
+  },
+  {
+    id: 'cyrillic',
+    title: 'キリル文字・幹線都市コース',
+    subtitle: 'ロシア・ウクライナ・ブルガリア・モンゴル等の州都＆重要拠点',
+    badge: '最頻出・キリル文字',
+    signStyle: 'sign-russian-blue',
+    langCode: 'ru-RU',
+    questions: [
+      {
+        native: 'Москва',
+        reading: 'モスクワ',
+        roman: 'Moskva',
+        country: 'ロシア連邦（首都）',
+        script: 'キリル文字',
+        signStyle: 'sign-russian-blue',
+        distance: '↑ M-1  120 km',
+        accepted: ['もすくわ', 'モスクワ', 'moskva', 'moscow'],
+        breakdown: [
+          ['М', 'm (ム)'], ['о', 'o (オ)'], ['с', 's (ス)'], ['к', 'k (ク)'], ['в', 'v (ヴ)'], ['а', 'a (ア)']
+        ],
+        note: 'キリル文字の基本！「с」はS、「в」はVの音。英語ではMoscowですが現地語では「モスクヴァ（Москва）」と綴ります。道路標識の距離表示で全方位から登場する最重要都市。'
+      },
+      {
+        native: 'Владивосток',
+        reading: 'ウラジオストク',
+        roman: 'Vladivostok',
+        country: 'ロシア極東・沿海地方',
+        script: 'キリル文字',
+        signStyle: 'sign-russian-blue',
+        distance: '↑ А-370  280 km',
+        accepted: ['うらじおすとく', 'ウラジオストク', 'うらじおすとっく', 'ヴラジオストク', 'vladivostok'],
+        breakdown: [
+          ['В', 'v'], ['л', 'l'], ['а', 'a'], ['д', 'd'], ['и', 'i'], ['в', 'v'], ['о', 'o'], ['с', 's'], ['т', 't'], ['о', 'o'], ['к', 'k']
+        ],
+        note: '極東ロシアのシベリア鉄道終着点かつM-60（A-370）号線の終点。「Вл(Vl)」から始まり「восток(Vostok＝東)」で終わる構造を知っておくと一瞬で読めます。'
+      },
+      {
+        native: 'Екатеринбург',
+        reading: 'エカテリンブルク',
+        roman: 'Yekaterinburg',
+        country: 'ロシア・ウラル連邦管区',
+        script: 'キリル文字',
+        signStyle: 'sign-russian-blue',
+        distance: '↑ Р-242  85 km',
+        accepted: ['えかてりんぶるく', 'エカテリンブルク', 'えかてりんぶるぐ', 'エカチェリンブルク', 'yekaterinburg', 'ekaterinburg'],
+        breakdown: [
+          ['Е', 'ye (エ)'], ['к', 'k'], ['а', 'a'], ['т', 't'], ['е', 'e'], ['р', 'r'], ['и', 'i'], ['н', 'n'], ['б', 'b'], ['у', 'u'], ['р', 'r'], ['г', 'g (ク/グ)']
+        ],
+        note: 'ヨーロッパ・ロシアとシベリアの境界（ウラル山脈）にある大都市。語末の「бург(burg)」はドイツ語のブルクと同じく「城・街」を意味し、サンクトペテルブルクやオレンブルクでも頻出します。'
+      },
+      {
+        native: 'Новосибирск',
+        reading: 'ノヴォシビルスク',
+        roman: 'Novosibirsk',
+        country: 'ロシア・シベリア連邦管区',
+        script: 'キリル文字',
+        signStyle: 'sign-russian-blue',
+        distance: '↑ Р-254  310 km',
+        accepted: ['のぼしびるすく', 'のゔぉしびるすく', 'ノヴォシビルスク', 'ノボシビルスク', 'novosibirsk'],
+        breakdown: [
+          ['Ново', 'Novo (新)'], ['сиб', 'sib (シベリア)'], ['ир', 'ir'], ['ск', 'sk (〜の街)']
+        ],
+        note: 'シベリア最大の都市。「Ново(ノヴォ＝新しい)」＋「сибир(シベリア)」＋「ск(スク＝都市接尾辞)」というパーツに分解すると超簡単に読めます！'
+      },
+      {
+        native: 'Красноярск',
+        reading: 'クラスノヤルスク',
+        roman: 'Krasnoyarsk',
+        country: 'ロシア・中央シベリア',
+        script: 'キリル文字',
+        signStyle: 'sign-russian-white',
+        distance: '↑ Р-255  64 km',
+        accepted: ['くらすのやるすく', 'クラスノヤルスク', 'krasnoyarsk'],
+        breakdown: [
+          ['Красн', 'Krasn (赤い/美しい)'], ['о', 'o'], ['яр', 'yar (崖)'], ['ск', 'sk (街)']
+        ],
+        note: '「Красно(クラスノ)」から始まる都市は、ここ（クラスノヤルスク＝東シベリア）と南部の「Краснодар（クラスノダール＝黒海沿岸付近）」の2大都市があるので後半の「ярск(ヤルスク)」までしっかり読むのがコツ！'
+      },
+      {
+        native: 'Алматы',
+        reading: 'アルマトイ',
+        roman: 'Almaty',
+        country: 'カザフスタン南部（最大都市）',
+        script: 'キリル文字',
+        signStyle: 'sign-russian-blue',
+        distance: '↑ A-2  45 km',
+        accepted: ['あるまとい', 'アルマトイ', 'あるまてぃ', 'アルマティ', 'almaty'],
+        breakdown: [
+          ['А', 'a'], ['л', 'l'], ['м', 'm'], ['а', 'a'], ['т', 't'], ['ы', 'y (ウイ/イ)']
+        ],
+        note: 'カザフスタン南部の最大都市。最後の文字「ы」は「ウ」と「イ」の中間のような母音です。'
+      },
+      {
+        native: 'Улаанбаатар',
+        reading: 'ウランバートル',
+        roman: 'Ulaanbaatar',
+        country: 'モンゴル国（首都）',
+        script: 'キリル文字',
+        signStyle: 'sign-russian-blue',
+        distance: '↑ AH-3  90 km',
+        accepted: ['うらんばーとる', 'ウランバートル', 'ulaanbaatar', 'ulanbator'],
+        breakdown: [
+          ['У', 'u'], ['л', 'l'], ['аан', 'aan'], ['б', 'b'], ['аа', 'aa'], ['т', 't'], ['а', 'a'], ['р', 'r']
+        ],
+        note: 'モンゴル語キリル文字の特徴は「аа」「оо」「уу」のように同じ母音が2つ連続して長母音を表す点！これが見えたらモンゴル確定レベルの強いメタになります。'
+      },
+      {
+        native: 'Пловдив',
+        reading: 'プロヴディフ',
+        roman: 'Plovdiv',
+        country: 'ブルガリア中部（第2の都市）',
+        script: 'キリル文字',
+        signStyle: 'sign-euro-green',
+        distance: '↑ A1  130 km',
+        accepted: ['ぷろゔでぃふ', 'ぷろぶでぃふ', 'プロヴディフ', 'プロブディフ', 'plovdiv'],
+        breakdown: [
+          ['П', 'p (プ)'], ['л', 'l (ル)'], ['о', 'o (オ)'], ['в', 'v (ヴ)'], ['д', 'd (デ)'], ['и', 'i (ィ)'], ['в', 'v/f (フ)']
+        ],
+        note: 'ブルガリアの高速道路（緑看板）で首都ソフィア（София）と並んで最も頻繁に見かける大都市。先頭の「П(P)」と「л(L)」を素早く繋げて読む練習に最適！'
+      }
+    ]
+  },
+  {
+    id: 'greek_east',
+    title: 'ギリシャ＆東欧特殊文字コース',
+    subtitle: 'ギリシャ文字・ポーランド・トルコ等の初見殺し綴りを完全攻略',
+    badge: 'ヨーロッパ・特殊文字',
+    signStyle: 'sign-greek-blue',
+    langCode: 'el-GR',
+    questions: [
+      {
+        native: 'Θεσσαλονίκη',
+        reading: 'テッサロニキ',
+        roman: 'Thessaloniki',
+        country: 'ギリシャ北部（第2の都市）',
+        script: 'ギリシャ文字',
+        signStyle: 'sign-greek-blue',
+        distance: '↑ A1  75 km',
+        accepted: ['てっさろにき', 'テッサロニキ', 'サロニカ', 'さろにか', 'thessaloniki'],
+        breakdown: [
+          ['Θ', 'Th (テ)'], ['ε', 'e'], ['σσ', 'ss (ッサ)'], ['α', 'a'], ['λ', 'l'], ['ο', 'o'], ['ν', 'n'], ['ί', 'i'], ['κ', 'k'], ['η', 'i (キ)']
+        ],
+        note: 'ギリシャ北部の最重要拠点！先頭の「Θ（シータ＝Th）」と「σ（シグマ＝S）」「ν（ニュー＝N、Vではない！）」が読めれば、ギリシャの道路標識は一気に視界が開けます。'
+      },
+      {
+        native: 'Αθήνα',
+        reading: 'アテネ',
+        roman: 'Athina / Athens',
+        country: 'ギリシャ共和国（首都）',
+        script: 'ギリシャ文字',
+        signStyle: 'sign-greek-blue',
+        distance: '↑ E75  180 km',
+        accepted: ['あてね', 'アテネ', 'あてぃな', 'アティナ', 'athens', 'athina'],
+        breakdown: [
+          ['Α', 'A (ア)'], ['θ', 'th (テ/س)'], ['ή', 'i (イ/エ)'], ['ν', 'n (ン/ネ)'], ['α', 'a (ア)']
+        ],
+        note: '現地語発音は「アティナ（Athina）」に近いですが、日本の地図・一般呼称では「アテネ」。小文字の「η（イータ）」はHに見えますが「イ（またはエ）」の母音です！'
+      },
+      {
+        native: 'Ηράκλειο',
+        reading: 'イラクリオン',
+        roman: 'Irakleio / Heraklion',
+        country: 'ギリシャ・クレタ島（最大都市）',
+        script: 'ギリシャ文字',
+        signStyle: 'sign-greek-blue',
+        distance: '↑ E75  30 km',
+        accepted: ['いらくりおん', 'イラクリオン', 'へらくりおん', 'ヘラクリオン', 'イラクリオ', 'heraklion', 'irakleio'],
+        breakdown: [
+          ['Η', 'I (イ)'], ['ρ', 'r (ラ)'], ['ά', 'a'], ['κ', 'k (ク)'], ['λ', 'l (リ)'], ['ει', 'i'], ['ο', 'o (オ)']
+        ],
+        note: 'クレタ島に降り立ったときに必ず目にする最大都市。先頭の「Η」は英語のHではなくギリシャ文字の「イータ（I）」、2文字目の「ρ」はPではなく「ロー（R）」です！'
+      },
+      {
+        native: 'Łódź',
+        reading: 'ウッチ',
+        roman: 'Lodz',
+        country: 'ポーランド中央部（第3の都市）',
+        script: 'ポーランド特殊ラテン文字',
+        signStyle: 'sign-euro-green',
+        distance: '↑ A1 / A2  50 km',
+        accepted: ['うっち', 'ウッチ', 'うっじ', 'ロッジ', 'lodz'],
+        breakdown: [
+          ['Ł', 'w (ウ)'], ['ó', 'u (ウ)'], ['dź', 'j/ch (ッチ)']
+        ],
+        note: '世界屈指の初見殺し地名！「Łódź」と書いて「ウッチ」と読みます。ポーランド語の「Ł」は英語のW（ウ）、「ó」はU（ウ）の音になるため、ロッズではなくウッチになります。'
+      },
+      {
+        native: 'Wrocław',
+        reading: 'ヴロツワフ',
+        roman: 'Wroclaw',
+        country: 'ポーランド南西部（ドルヌィ・シロンスク県都）',
+        script: 'ポーランド特殊ラテン文字',
+        signStyle: 'sign-euro-green',
+        distance: '↑ A4  95 km',
+        accepted: ['ゔろつわふ', 'ぶろつわふ', 'ヴロツワフ', 'ブロツワフ', 'wroclaw'],
+        breakdown: [
+          ['W', 'v (ヴ)'], ['r', 'r'], ['o', 'o'], ['c', 'ts (ツ)'], ['ł', 'w (ワ)'], ['a', 'a'], ['w', 'f/v (フ)']
+        ],
+        note: 'ポーランドの高速A4号線で頻出する南西部の大都市。「W＝V」「c＝ツ(ts)」「ł＝W(ワ)」というポーランド語3大ルールがこの1単語にすべて詰まっています！'
+      },
+      {
+        native: 'Bydgoszcz',
+        reading: 'ブィドゴシュチ',
+        roman: 'Bydgoszcz',
+        country: 'ポーランド中北部',
+        script: 'ポーランド特殊ラテン文字',
+        signStyle: 'sign-euro-green',
+        distance: '↑ S5  40 km',
+        accepted: ['ぶぃどごしゅち', 'びどごしゅち', 'ブィドゴシュチ', 'ビドゴシュチ', 'ビドゴシチ', 'bydgoszcz'],
+        breakdown: [
+          ['Byd', 'Byd (ブィド)'], ['go', 'go (ゴ)'], ['sz', 'sh (シュ)'], ['cz', 'ch (チ)']
+        ],
+        note: '子音だらけでパニックになりがちなポーランド語ですが、「sz＝sh（シュ）」「cz＝ch（チ）」の2つを塊として見るだけでスッキリ読めるようになります！'
+      },
+      {
+        native: 'İzmir',
+        reading: 'イズミル',
+        roman: 'Izmir',
+        country: 'トルコ西部（エーゲ海沿岸・第3の都市）',
+        script: 'トルコ文字',
+        signStyle: 'sign-russian-blue',
+        distance: '↑ O-5  110 km',
+        accepted: ['いずみる', 'イズミル', 'イズミール', 'izmir'],
+        breakdown: [
+          ['İ', 'I (イ ※点つき大文字)'], ['z', 'z (ズ)'], ['m', 'm (ミ)'], ['i', 'i'], ['r', 'r (ル)']
+        ],
+        note: '大文字の「İ」の上に点があるのはトルコ語（およびアゼルバイジャン語）の決定的な特徴！逆に点のない「I ı」は「ウ」に近い音になります。'
+      },
+      {
+        native: 'České Budějovice',
+        reading: 'チェスケー・ブジェヨヴィツェ',
+        roman: 'Ceske Budejovice',
+        country: 'チェコ南部（南ボヘミア州都）',
+        script: 'チェコ特殊ラテン文字',
+        signStyle: 'sign-russian-blue',
+        distance: '↑ D3  60 km',
+        accepted: ['ちぇすけーぶじぇよゔぃつぇ', 'ちぇすけーぶじぇよびつぇ', 'チェスケーブジェヨヴィツェ', 'チェスケー・ブジェヨヴィツェ', 'ブジェヨヴィツェ', 'ぶじぇよゔぃつぇ', 'ceske budejovice'],
+        breakdown: [
+          ['Č', 'Ch (チ)'], ['eské', 'eské (ェスケー)'], ['Budě', 'Budye (ブジェ)'], ['jo', 'yo (ヨ)'], ['vice', 'vitse (ヴィツェ)']
+        ],
+        note: 'チェコ固有の文字「ě（イェ）」が入っているのが最大のポイント！「Č（チ）」と語尾の「ce（ツェ）」もチェコ・スロバキアで頻出します。'
+      }
+    ]
+  },
+  {
+    id: 'asia_mideast',
+    title: 'アジア＆アラビア文字コース',
+    subtitle: '韓国ハングル・タイ文字・アラビア文字・ヘブライ文字の主要都市',
+    badge: 'アジア・中東文字',
+    signStyle: 'sign-korea-green',
+    langCode: 'ko-KR',
+    questions: [
+      {
+        native: '부산',
+        reading: 'プサン',
+        roman: 'Busan',
+        country: '韓国南東部（第2の都市・釜山）',
+        script: 'ハングル（韓国）',
+        signStyle: 'sign-korea-green',
+        distance: '↑ 1 (京釜高速)  80 km',
+        accepted: ['ぷさん', 'プサン', 'ぶさん', '釜山', 'busan', 'pusan'],
+        breakdown: [
+          ['부', 'ㅂ(b/p) + ㅜ(u) = プ'], ['산', 'ㅅ(s) + ㅏ(a) + ㄴ(n) = サン']
+        ],
+        note: '韓国第2の都市・釜山（プサン）。1文字目の「부」は「ㅂ(P/B)」の下に「ㅜ(U)」、2文字目の「산」は「山（サン）」を表す超頻出パーツ（蔚山＝울산、群山＝군산などにも共通）です！'
+      },
+      {
+        native: '대전',
+        reading: 'テジョン',
+        roman: 'Daejeon',
+        country: '韓国中央部（大田広域市）',
+        script: 'ハングル（韓国）',
+        signStyle: 'sign-korea-green',
+        distance: '↑ 1 / 35  45 km',
+        accepted: ['てじょん', 'テジョン', 'でじょん', '大田', 'daejeon'],
+        breakdown: [
+          ['대', 'ㄷ(d/t) + ㅐ(ae) = テ/デ'], ['전', 'ㅈ(j) + ㅓ(eo) + ㄴ(n) = ジョン']
+        ],
+        note: '韓国の交通の要衝・大田（テジョン）。「대(大＝テ/デ)」は「대구（大邱＝テグ）」とも1文字目が共通しているのでセットで覚えると韓国の高速標識が一気に読めます！'
+      },
+      {
+        native: '광주',
+        reading: 'クァンジュ',
+        roman: 'Gwangju',
+        country: '韓国南西部（光州広域市）',
+        script: 'ハングル（韓国）',
+        signStyle: 'sign-korea-green',
+        distance: '↑ 25 (湖南高速)  60 km',
+        accepted: ['くぁんじゅ', 'クァンジュ', 'こうしゅう', '光州', 'gwangju', 'kwanju'],
+        breakdown: [
+          ['광', 'ㄱ(g/k) + ㅘ(wa) + ㅇ(ng) = クァン'], ['주', 'ㅈ(j) + ㅜ(u) = ジュ']
+        ],
+        note: '2文字目の「주（州＝ジュ）」は、全州（전주＝チョンジュ）、清州（청주＝チョンジュ）、済州（제주＝チェジュ）、原州（원주＝ウォンジュ）など韓国中の都市名につく最重要漢字音です！'
+      },
+      {
+        native: 'เชียงใหม่',
+        reading: 'チェンマイ',
+        roman: 'Chiang Mai',
+        country: 'タイ北部（最大都市）',
+        script: 'タイ文字',
+        signStyle: 'sign-euro-green',
+        distance: '↑ 11  55 km',
+        accepted: ['ちぇんまい', 'チェンマイ', 'ちあんまい', 'chiang mai', 'chiangmai'],
+        breakdown: [
+          ['เชีย', 'chia'], ['ง', 'ng (チェン)'], ['ให', 'ma'], ['ม่', 'i (マイ)']
+        ],
+        note: 'タイ北部の中心都市チェンマイ。前半の「เชียง（Chiang＝チェン）」という文字列は、すぐ北東の「เชียงราย（チェンライ）」とも全く同じなので、この形を見たらタイ北部確定です！'
+      },
+      {
+        native: 'ภูเก็ต',
+        reading: 'プーケット',
+        roman: 'Phuket',
+        country: 'タイ南部（アンダマン海側）',
+        script: 'タイ文字',
+        signStyle: 'sign-euro-green',
+        distance: '↑ 402  25 km',
+        accepted: ['ぷーけっと', 'プーケット', 'phuket'],
+        breakdown: [
+          ['ภู', 'Phu (プー)'], ['เก็', 'ke (ケッ)'], ['ต', 't (ト)']
+        ],
+        note: '先頭の「ภู(Phu＝山)」はタイ北東部のルーイ県などでも山岳名として使われます。上部にある小さな8の字のような記号「็」は短母音記号で、タイ文字とクメール文字を見分ける目印にもなります。'
+      },
+      {
+        native: 'دبي',
+        reading: 'ドバイ',
+        roman: 'Dubai',
+        country: 'アラブ首長国連邦（UAE）',
+        script: 'アラビア文字（右から左）',
+        signStyle: 'sign-mideast-brown',
+        distance: '↑ E11  40 km',
+        accepted: ['どばい', 'ドバイ', 'dubai'],
+        breakdown: [
+          ['د (右)', 'd (ド)'], ['ب (中)', 'b (バ)'], ['ي (左)', 'y/i (イ)']
+        ],
+        note: 'アラビア文字は右から左へ読みます！右端の「د(D)」＋真ん中の下に点がある「ب(B)」＋左端の「ي(I)」のたった3文字で「ドバイ（Dubai）」です。'
+      },
+      {
+        native: 'صفاقس',
+        reading: 'スファックス',
+        roman: 'Sfax',
+        country: 'チュニジア東部（第2の都市）',
+        script: 'アラビア文字（右から左）',
+        signStyle: 'sign-mideast-brown',
+        distance: '↑ A1  110 km',
+        accepted: ['すふぁっくす', 'スファックス', 'スファクス', 'すふぁくす', 'sfax'],
+        breakdown: [
+          ['ص (右)', 's (ス)'], ['ف', 'f (ファ)'], ['ا', 'a (ー)'], ['ق', 'q/k (ック)'], ['س (左)', 's (ス)']
+        ],
+        note: 'GeoGuessrでチュニジアが出た際、首都チュニス（تونس）と並んで最も道路標識に登場する沿岸第2の都市です。'
+      },
+      {
+        native: 'תל אביב',
+        reading: 'テルアビブ',
+        roman: 'Tel Aviv',
+        country: 'イスラエル（経済中心都市）',
+        script: 'ヘブライ文字（右から左）',
+        signStyle: 'sign-euro-green',
+        distance: '↑ 1 / 20  18 km',
+        accepted: ['てるあびぶ', 'テルアビブ', 'てるあゔぃゔ', 'テルアヴィヴ', 'tel aviv', 'telaviv'],
+        breakdown: [
+          ['תל (右)', 'Tel (テル＝丘)'], ['אביב (左)', 'Aviv (アビブ＝春)']
+        ],
+        note: 'ヘブライ文字もアラビア文字と同じく「右から左」へ読みます。右側の2文字「תל」が「テル（Tel）」、左側の4文字「אביב」が「アビブ（Aviv）」です。'
+      }
+    ]
+  }
+];
+
+// ==================== Web Audio API シンセサイザー効果音 ====================
+class SoundEngine {
+  constructor() {
+    this.ctx = null;
+    this.enabled = true;
+  }
+  init() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AudioCtx();
+    }
+    if (this.ctx.state === 'suspended') {
+      this.ctx.resume();
+    }
+  }
+  playSpawn() {
+    if (!this.enabled) return;
+    this.init();
+    const now = this.ctx.currentTime;
+    // 和太鼓ドーン風の重低音＋金属アタック
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.exponentialRampToValueAtTime(42, now + 0.35);
+    gain.gain.setValueAtTime(0.4, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.38);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.4);
+  }
+  playSlashClear() {
+    if (!this.enabled) return;
+    this.init();
+    const now = this.ctx.currentTime;
+    // 撃破ピンポン＋和風キラーン音
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.055);
+      gain.gain.setValueAtTime(0.25, now + idx * 0.055);
+      gain.gain.exponentialRampToValueAtTime(0.008, now + idx * 0.055 + 0.45);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now + idx * 0.055);
+      osc.stop(now + idx * 0.055 + 0.46);
+    });
+  }
+  playMiss() {
+    if (!this.enabled) return;
+    this.init();
+    const now = this.ctx.currentTime;
+    [160, 115].forEach((freq, idx) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.14);
+      gain.gain.setValueAtTime(0.22, now + idx * 0.14);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.14 + 0.35);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now + idx * 0.14);
+      osc.stop(now + idx * 0.14 + 0.36);
+    });
+  }
+  playTick(urgent = false) {
+    if (!this.enabled) return;
+    this.init();
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(urgent ? 880 : 520, now);
+    gain.gain.setValueAtTime(urgent ? 0.15 : 0.06, now);
+    gain.gain.exponentialRampToValueAtTime(0.005, now + 0.07);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.08);
+  }
+  playBuzzer() {
+    if (!this.enabled) return;
+    this.init();
+    const now = this.ctx.currentTime;
+    [880, 1174.66].forEach((f, i) => {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(f, now + i * 0.07);
+      gain.gain.setValueAtTime(0.18, now + i * 0.07);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.07 + 0.25);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now + i * 0.07);
+      osc.stop(now + i * 0.07 + 0.26);
+    });
+  }
+}
+
+// ==================== インライン Web Worker タイマー（バックグラウンド間引き防止） ====================
+function createWorkerTimer(callback) {
+  const blob = new Blob([`
+    let timerId = null;
+    self.onmessage = function(e) {
+      if (e.data === 'start') {
+        if (timerId) clearInterval(timerId);
+        timerId = setInterval(() => self.postMessage('tick'), 100);
+      } else if (e.data === 'stop') {
+        if (timerId) clearInterval(timerId);
+        timerId = null;
+      }
+    };
+  `], { type: 'application/javascript' });
+  const worker = new Worker(URL.createObjectURL(blob));
+  worker.onmessage = () => callback();
+  return worker;
+}
+
+// ==================== メインアプリケーション ====================
+class GeoGoApp {
+  constructor() {
+    this.sfx = new SoundEngine();
+    this.playStyle = 'rush'; // 'rush' (漢字でGO!式) or 'buzzer' (1文字ずつ早押し)
+    this.timeLimit = 10;
+    this.initialHint = false;
+    this.autoNext = false;
+
+    this.currentPack = null;
+    this.questions = [];
+    this.qIndex = 0;
+    this.score = 0;
+    this.combo = 0;
+    this.lives = 5;
+    this.maxLives = 5;
+
+    this.remainingTime = 10;
+    this.questionStartTime = 0;
+    this.isAnswering = false;
+    this.isBuzzerFrozen = false;
+    this.revealedChars = 1;
+    this.charIntervalAcc = 0;
+
+    this.history = [];
+    this.worker = createWorkerTimer(() => this.onTimerTick());
+
+    this.recognition = null;
+    this.micActive = false;
+    this.initSpeechRecognition();
+    this.renderPackGrid();
+    this.bindShortcuts();
+  }
+
+  // カタカナ→ひらがな＆外国語地名の表記揺れ正規化エンジン
+  normalizeGeoText(str) {
+    if (!str) return '';
+    let s = str.trim().toLowerCase();
+    // 全角英数→半角
+    s = s.replace(/[Ａ-Ｚａ-ｚ０-９]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+    // フィラー除去
+    s = s.replace(/^(答えは|こたえは|えーっと|えっと|あのー|たぶん|おそらく)/g, '');
+    s = s.replace(/(です|ます|だ|かな|だと思う|だと思います|でしょう)$/g, '');
+    // カタカナ→ひらがな変換
+    s = s.replace(/[ァ-ヶ]/g, m => String.fromCharCode(m.charCodeAt(0) - 0x60));
+    // 記号・スペース・中黒の除去
+    s = s.replace(/[\s・ー\-_、。！？!?.,']/g, '');
+    // 外国語地名特有の音声揺れ統一（ヴ→ぶ、づ→ず、ぢ→じ、っ→つ省略吸収用の基本変換）
+    s = s.replace(/ゔぁ/g, 'ば').replace(/ゔぃ/g, 'び').replace(/ゔぇ/g, 'べ').replace(/ゔぉ/g, 'ぼ').replace(/ゔ/g, 'ぶ');
+    return s;
+  }
+
+  checkAnswerMatch(userInput, question) {
+    const normUser = this.normalizeGeoText(userInput);
+    if (!normUser || normUser.length < 2) return false;
+
+    for (const candidate of question.accepted) {
+      const normCand = this.normalizeGeoText(candidate);
+      if (!normCand) continue;
+      if (normUser === normCand) return true;
+      // 音声認識で前後に余計な語が入った場合の部分一致許容
+      if (normCand.length >= 3 && normUser.includes(normCand)) return true;
+      // 促音（っ）の有無の揺れ吸収（例：ウラジオストク vs ウラジオストック）
+      const noTsuUser = normUser.replace(/っ/g, '');
+      const noTsuCand = normCand.replace(/っ/g, '');
+      if (noTsuUser === noTsuCand) return true;
+    }
+    return false;
+  }
+
+  initSpeechRecognition() {
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) {
+      document.getElementById('micStatusText').textContent = '音声認識非対応ブラウザ（タイピングで回答可）';
+      return;
+    }
+    this.recognition = new SpeechRec();
+    this.recognition.lang = 'ja-JP';
+    this.recognition.continuous = true;
+    this.recognition.interimResults = true;
+
+    this.recognition.onstart = () => {
+      this.micActive = true;
+      this.updateMicUI();
+    };
+
+    this.recognition.onend = () => {
+      this.micActive = false;
+      this.updateMicUI();
+      // バトル回答中は自動でマイクを再接続して途切れを防ぐ
+      if (this.isAnswering) {
+        try { this.recognition.start(); } catch (e) {}
+      }
+    };
+
+    this.recognition.onresult = (event) => {
+      if (!this.isAnswering) return;
+      let interim = '';
+      let finalStr = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalStr += transcript;
+        } else {
+          interim += transcript;
+        }
+      }
+      const currentSpoken = (finalStr || interim).trim();
+      if (currentSpoken) {
+        document.getElementById('voiceInterimText').textContent = `認識中: 「${currentSpoken}」`;
+        // 発話中スマート延長（喋っている途中で理不尽に時間切れになるのを防ぐ）
+        if (this.remainingTime < 2.4) {
+          this.remainingTime = 2.4;
+        }
+        // 早押しモードでまだボタンを押していなくても、声を出したら自動で早押しロックイン
+        if (this.playStyle === 'buzzer' && !this.isBuzzerFrozen) {
+          this.triggerBuzzer(false);
+        }
+        // 正解に一致した瞬間に即座に撃破判定！
+        const currentQ = this.questions[this.qIndex];
+        if (this.checkAnswerMatch(currentSpoken, currentQ)) {
+          this.completeQuestion(true, currentSpoken);
+        }
+      }
+    };
+  }
+
+  updateMicUI() {
+    const dot = document.getElementById('micDot');
+    const txt = document.getElementById('micStatusText');
+    const btn = document.getElementById('btnMic');
+    if (this.micActive) {
+      dot.className = 'w-3 h-3 rounded-full bg-red-500 animate-ping';
+      txt.textContent = 'マイクON（声で即撃破！）';
+      btn.className = 'flex items-center justify-center gap-2.5 px-5 py-3 rounded-lg font-black text-sm border-2 border-red-500 bg-red-600/30 text-white transition shrink-0';
+    } else {
+      dot.className = 'w-3 h-3 rounded-full bg-zinc-500';
+      txt.textContent = 'マイクOFF（クリックで起動）';
+      btn.className = 'flex items-center justify-center gap-2.5 px-5 py-3 rounded-lg font-black text-sm border-2 border-zinc-700 bg-zinc-800 text-zinc-400 transition shrink-0';
+    }
+  }
+
+  toggleMic() {
+    if (!this.recognition) return;
+    if (this.micActive) {
+      this.isAnswering = false;
+      this.recognition.stop();
+    } else {
+      try { this.recognition.start(); } catch (e) {}
+    }
+  }
+
+  renderPackGrid() {
+    const grid = document.getElementById('packGrid');
+    const allQuestions = GEO_PACKS.flatMap(p => p.questions);
+    const packsWithAll = [
+      ...GEO_PACKS,
+      {
+        id: 'all_random',
+        title: '全文字種・総合実践サバイバル',
+        subtitle: 'キリル・ギリシャ・東欧・ハングル・タイ・アラビアからランダム10問！',
+        badge: '総合腕試し（全24都市）',
+        questions: allQuestions
+      }
+    ];
+
+    grid.innerHTML = packsWithAll.map(pack => `
+      <div class="bg-zinc-900/95 border-2 border-zinc-800 hover:border-amber-500 rounded-xl p-5 flex flex-col justify-between gap-4 transition group shadow-lg">
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="px-2.5 py-0.5 rounded text-[11px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">${pack.badge}</span>
+            <span class="text-xs font-mono text-zinc-400">全${pack.questions.length}都市</span>
+          </div>
+          <h3 class="serif-heavy text-xl font-black text-white group-hover:text-amber-300 transition">${pack.title}</h3>
+          <p class="text-xs text-zinc-400 leading-relaxed">${pack.subtitle}</p>
+          <div class="pt-1 flex flex-wrap gap-1.5">
+            ${pack.questions.slice(0, 4).map(q => `<span class="px-2 py-0.5 rounded bg-zinc-950 border border-zinc-800 text-xs font-bold text-zinc-200">${q.native}</span>`).join('')}
+            <span class="px-2 py-0.5 text-xs text-zinc-500">...</span>
+          </div>
+        </div>
+        <button onclick="app.startPack('${pack.id}')" class="w-full py-3 rounded-lg bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-black text-sm tracking-wider shadow-md transition">
+          この道場へ出陣する →
+        </button>
+      </div>
+    `).join('');
+  }
+
+  setPlayStyle(style) {
+    this.playStyle = style;
+    document.getElementById('modeRush').className = style === 'rush'
+      ? 'py-2 px-3 rounded font-bold text-xs border border-amber-500 bg-amber-600/30 text-white'
+      : 'py-2 px-3 rounded font-bold text-xs border border-zinc-700 bg-zinc-800 text-zinc-400';
+    document.getElementById('modeBuzzer').className = style === 'buzzer'
+      ? 'py-2 px-3 rounded font-bold text-xs border border-amber-500 bg-amber-600/30 text-white'
+      : 'py-2 px-3 rounded font-bold text-xs border border-zinc-700 bg-zinc-800 text-zinc-400';
+  }
+
+  setTimeLimit(sec) {
+    this.timeLimit = sec;
+    [6, 10, 15].forEach(t => {
+      document.getElementById('time' + t).className = (t === sec)
+        ? 'py-2 rounded font-bold text-xs border border-amber-500 bg-amber-600/30 text-white'
+        : 'py-2 rounded font-bold text-xs border border-zinc-700 bg-zinc-800 text-zinc-400';
+    });
+  }
+
+  setInitialHint(flag) {
+    this.initialHint = flag;
+    document.getElementById('hintOff').className = !flag
+      ? 'py-2 px-3 rounded font-bold text-xs border border-amber-500 bg-amber-600/30 text-white'
+      : 'py-2 px-3 rounded font-bold text-xs border border-zinc-700 bg-zinc-800 text-zinc-400';
+    document.getElementById('hintOn').className = flag
+      ? 'py-2 px-3 rounded font-bold text-xs border border-amber-500 bg-amber-600/30 text-white'
+      : 'py-2 px-3 rounded font-bold text-xs border border-zinc-700 bg-zinc-800 text-zinc-400';
+  }
+
+  toggleAutoNext() {
+    this.autoNext = !this.autoNext;
+    const btn = document.getElementById('btnAutoNext');
+    btn.textContent = `自動進行: ${this.autoNext ? 'ON' : 'OFF'}`;
+    btn.className = this.autoNext
+      ? 'px-2.5 py-1 rounded text-xs font-bold border border-emerald-500 bg-emerald-950/60 text-emerald-300 transition'
+      : 'px-2.5 py-1 rounded text-xs font-bold border border-zinc-700 bg-zinc-900 text-zinc-300 transition';
+  }
+
+  toggleSound() {
+    this.sfx.enabled = !this.sfx.enabled;
+    const btn = document.getElementById('btnSound');
+    btn.textContent = `効果音: ${this.sfx.enabled ? 'ON' : 'OFF'}`;
+  }
+
+  toggleCheatSheet() {
+    const modal = document.getElementById('modalCheatSheet');
+    modal.classList.toggle('hidden');
+  }
+
+  async openPiP() {
+    if ('documentPictureInPicture' in window) {
+      try {
+        const pipWin = await window.documentPictureInPicture.requestWindow({ width: 520, height: 680 });
+        [...document.styleSheets].forEach((styleSheet) => {
+          try {
+            const cssRules = [...styleSheet.cssRules].map((rule) => rule.cssText).join('');
+            const style = document.createElement('style');
+            style.textContent = cssRules;
+            pipWin.document.head.appendChild(style);
+          } catch (e) {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = styleSheet.href;
+            pipWin.document.head.appendChild(link);
+          }
+        });
+        pipWin.document.body.className = document.body.className;
+        const main = document.getElementById('mainContainer');
+        pipWin.document.body.appendChild(main);
+        pipWin.addEventListener('pagehide', () => {
+          document.body.appendChild(main);
+        });
+      } catch (err) {
+        alert('ミニ窓の起動に失敗しました: ' + err.message);
+      }
+    } else {
+      alert('お使いのブラウザはDocument Picture-in-Picture APIに未対応です（PC版Chrome / Edgeで動作します）。');
+    }
+  }
+
+  startPack(packId, customQuestions = null) {
+    this.sfx.init();
+    if (customQuestions) {
+      this.questions = [...customQuestions];
+    } else if (packId === 'all_random') {
+      const all = GEO_PACKS.flatMap(p => p.questions);
+      this.questions = all.sort(() => Math.random() - 0.5).slice(0, 10);
+      this.currentPack = 'all_random';
+    } else {
+      const found = GEO_PACKS.find(p => p.id === packId);
+      this.currentPack = packId;
+      this.questions = [...found.questions].sort(() => Math.random() - 0.5);
+    }
+
+    this.qIndex = 0;
+    this.score = 0;
+    this.combo = 0;
+    this.lives = this.maxLives;
+    this.history = [];
+
+    document.getElementById('screenHome').classList.add('hidden');
+    document.getElementById('screenResult').classList.add('hidden');
+    document.getElementById('screenBattle').classList.remove('hidden');
+
+    this.loadQuestion();
+  }
+
+  loadQuestion() {
+    const q = this.questions[this.qIndex];
+    this.isAnswering = true;
+    this.isBuzzerFrozen = false;
+    this.remainingTime = this.timeLimit;
+    this.questionStartTime = performance.now();
+    this.revealedChars = this.playStyle === 'buzzer' ? 1 : q.native.length;
+    this.charIntervalAcc = 0;
+
+    // UIリセット
+    document.getElementById('explanationPanel').classList.add('hidden');
+    document.getElementById('judgeStampOverlay').classList.add('hidden');
+    document.getElementById('crisisOverlay').classList.add('hidden');
+    document.getElementById('textAnswerInput').value = '';
+    document.getElementById('textAnswerInput').focus();
+    document.getElementById('voiceInterimText').textContent = 'マイクに向かって都市名を日本語読みで発声してください...';
+
+    // ステータス更新
+    document.getElementById('hudProgress').textContent = `${this.qIndex + 1} / ${this.questions.length}`;
+    document.getElementById('hudCombo').textContent = this.combo;
+    document.getElementById('hudScore').textContent = this.score;
+    document.getElementById('hudLives').innerHTML = '♥'.repeat(this.lives) + '<span class="text-zinc-700">' + '♥'.repeat(Math.max(0, this.maxLives - this.lives)) + '</span>';
+
+    // 道路標識デザイン反映
+    document.getElementById('signScriptBadge').textContent = `${q.script}`;
+    document.getElementById('signDistance').innerHTML = `<span>${q.distance}</span><span>GEO-SIGN</span>`;
+    const signBox = document.getElementById('roadSignBox');
+    signBox.className = `${q.signStyle || 'sign-russian-blue'} px-8 py-5 sm:px-12 sm:py-7 rounded-xl text-center transition-all pressure-sign`;
+
+    this.renderSignText();
+
+    // 早押しボタン表示切替
+    const buzzerOverlay = document.getElementById('buzzerOverlay');
+    if (this.playStyle === 'buzzer') {
+      buzzerOverlay.classList.remove('hidden');
+    } else {
+      buzzerOverlay.classList.add('hidden');
+    }
+
+    // 1文字分解ヒントの初期状態
+    this.renderBreakdownHint(q);
+    if (this.initialHint) {
+      document.getElementById('charBreakdownBox').classList.remove('hidden');
+    } else {
+      document.getElementById('charBreakdownBox').classList.add('hidden');
+    }
+
+    // 出題効果音＆マイク起動＆タイマー開始
+    this.sfx.playSpawn();
+    if (this.recognition && !this.micActive) {
+      try { this.recognition.start(); } catch (e) {}
+    }
+    this.worker.postMessage('start');
+  }
+
+  renderSignText() {
+    const q = this.questions[this.qIndex];
+    const mainEl = document.getElementById('signMainText');
+    if (this.playStyle === 'rush') {
+      mainEl.textContent = q.native;
+    } else {
+      const visible = q.native.slice(0, this.revealedChars);
+      const hiddenCount = Math.max(0, q.native.length - this.revealedChars);
+      const mask = '・'.repeat(hiddenCount);
+      mainEl.innerHTML = `${visible}<span class="text-red-400">${this.isBuzzerFrozen ? '/' : ''}</span><span class="opacity-30">${mask}</span>`;
+    }
+  }
+
+  renderBreakdownHint(q) {
+    const container = document.getElementById('charBreakdownContent');
+    container.innerHTML = q.breakdown.map(([ch, sound]) => `
+      <span class="px-2 py-1 rounded bg-zinc-900 border border-zinc-700 text-zinc-200">
+        <strong class="text-amber-300 text-base">${ch}</strong> = ${sound}
+      </span>
+    `).join('');
+  }
+
+  revealHint() {
+    if (!this.isAnswering) return;
+    document.getElementById('charBreakdownBox').classList.remove('hidden');
+  }
+
+  triggerBuzzer(playSound = true) {
+    if (!this.isAnswering || this.isBuzzerFrozen) return;
+    this.isBuzzerFrozen = true;
+    if (playSound) this.sfx.playBuzzer();
+    document.getElementById('buzzerOverlay').classList.add('hidden');
+    this.renderSignText();
+    document.getElementById('textAnswerInput').focus();
+  }
+
+  onTimerTick() {
+    if (!this.isAnswering) return;
+    const q = this.questions[this.qIndex];
+
+    // 早押しモードでまだ押していない場合は文字を1文字ずつ進める
+    if (this.playStyle === 'buzzer' && !this.isBuzzerFrozen) {
+      this.charIntervalAcc += 0.1;
+      if (this.charIntervalAcc >= 0.35 && this.revealedChars < q.native.length) {
+        this.charIntervalAcc = 0;
+        this.revealedChars++;
+        this.renderSignText();
+      }
+    }
+
+    this.remainingTime = Math.max(0, +(this.remainingTime - 0.1).toFixed(1));
+    document.getElementById('timerText').textContent = `${this.remainingTime.toFixed(1)}s`;
+    const pct = Math.max(0, (this.remainingTime / this.timeLimit) * 100);
+    document.getElementById('timerBar').style.width = `${pct}%`;
+
+    // 残り3.0秒以下で危機ビネット＆カウント音
+    if (this.remainingTime <= 3.0 && this.remainingTime > 0) {
+      document.getElementById('crisisOverlay').classList.remove('hidden');
+      if (Math.abs(this.remainingTime * 10 % 5) < 0.1) {
+        this.sfx.playTick(true);
+      }
+    }
+
+    if (this.remainingTime <= 0) {
+      this.completeQuestion(false, 'TIME UP');
+    }
+  }
+
+  handleTextSubmit(e) {
+    e.preventDefault();
+    if (!this.isAnswering) {
+      this.nextQuestion();
+      return;
+    }
+    const input = document.getElementById('textAnswerInput');
+    const val = input.value.trim();
+    if (!val) return;
+
+    const currentQ = this.questions[this.qIndex];
+    if (this.checkAnswerMatch(val, currentQ)) {
+      this.completeQuestion(true, val);
+    } else {
+      // 誤答時は画面を揺らして即再入力可能にする
+      this.sfx.playMiss();
+      const arena = document.getElementById('stageArena');
+      arena.classList.remove('shake-effect');
+      void arena.offsetWidth;
+      arena.classList.add('shake-effect');
+      document.getElementById('voiceInterimText').textContent = `「${val}」は不一致！もう一度！`;
+      input.select();
+    }
+  }
+
+  giveUpQuestion() {
+    if (!this.isAnswering) return;
+    this.completeQuestion(false, 'PASS');
+  }
+
+  completeQuestion(isCorrect, userAnswer) {
+    if (!this.isAnswering) return;
+    this.isAnswering = false;
+    this.worker.postMessage('stop');
+    document.getElementById('crisisOverlay').classList.add('hidden');
+    document.getElementById('buzzerOverlay').classList.add('hidden');
+
+    const q = this.questions[this.qIndex];
+    const elapsed = +((performance.now() - this.questionStartTime) / 1000).toFixed(2);
+
+    // 全文字を表示
+    document.getElementById('signMainText').textContent = q.native;
+
+    const stampOverlay = document.getElementById('judgeStampOverlay');
+    const stampBadge = document.getElementById('judgeStampBadge');
+    stampOverlay.classList.remove('hidden');
+
+    if (isCorrect) {
+      this.sfx.playSlashClear();
+      this.combo++;
+      const speedBonus = Math.round((this.remainingTime / this.timeLimit) * 60);
+      const comboBonus = Math.min(50, this.combo * 10);
+      const gained = 100 + speedBonus + comboBonus;
+      this.score += gained;
+
+      stampBadge.textContent = `撃破!! +${gained}`;
+      stampBadge.className = 'stamp-anim px-8 py-3 border-4 border-amber-300 bg-gradient-to-b from-red-600 to-amber-600 text-white rounded-xl serif-heavy text-4xl sm:text-6xl font-black tracking-widest shadow-2xl';
+    } else {
+      this.sfx.playMiss();
+      this.combo = 0;
+      this.lives = Math.max(0, this.lives - 1);
+
+      stampBadge.textContent = userAnswer === 'TIME UP' ? '時間切れ...' : '見失った...';
+      stampBadge.className = 'stamp-anim px-8 py-3 border-4 border-zinc-500 bg-zinc-900/95 text-red-400 rounded-xl serif-heavy text-3xl sm:text-5xl font-black tracking-widest shadow-2xl';
+    }
+
+    // 履歴保存
+    this.history.push({
+      question: q,
+      isCorrect,
+      userAnswer,
+      elapsed
+    });
+
+    // ステータス反映
+    document.getElementById('hudCombo').textContent = this.combo;
+    document.getElementById('hudScore').textContent = this.score;
+    document.getElementById('hudLives').innerHTML = '♥'.repeat(this.lives) + '<span class="text-zinc-700">' + '♥'.repeat(Math.max(0, this.maxLives - this.lives)) + '</span>';
+
+    // 少し待ってからスタンプを薄くし、詳細解説パネルを表示
+    setTimeout(() => {
+      stampOverlay.classList.add('hidden');
+      this.showExplanation(q, isCorrect);
+    }, 850);
+  }
+
+  showExplanation(q, isCorrect) {
+    const panel = document.getElementById('explanationPanel');
+    panel.classList.remove('hidden');
+
+    const badge = document.getElementById('expResultBadge');
+    badge.textContent = isCorrect ? '撃破 (CLEAR!!)' : '未撃破 (MISS)';
+    badge.className = isCorrect
+      ? 'px-2.5 py-0.5 rounded text-xs font-black bg-emerald-600 text-white'
+      : 'px-2.5 py-0.5 rounded text-xs font-black bg-red-600 text-white';
+
+    document.getElementById('expCountryBadge').textContent = `${q.country} [${q.script}]`;
+    document.getElementById('expNativeTitle').textContent = q.native;
+    document.getElementById('expReadingTitle').textContent = q.reading;
+    document.getElementById('expRomanTitle').textContent = `(${q.roman})`;
+    document.getElementById('expGeoNote').textContent = q.note;
+
+    const cards = document.getElementById('expCharCards');
+    cards.innerHTML = q.breakdown.map(([ch, sound]) => `
+      <div class="bg-zinc-950 border border-amber-500/40 rounded-lg px-3 py-2 text-center min-w-[72px]">
+        <div class="text-xl font-black text-white">${ch}</div>
+        <div class="text-xs font-mono text-amber-400 mt-0.5">${sound}</div>
+      </div>
+    `).join('');
+
+    // 日本語で都市名とワンポイントを読み上げ
+    this.speakAnswerSummary(q);
+
+    if (this.autoNext) {
+      setTimeout(() => {
+        if (!this.isAnswering && !document.getElementById('screenBattle').classList.contains('hidden')) {
+          this.nextQuestion();
+        }
+      }, 3600);
+    }
+  }
+
+  speakNative() {
+    const q = this.questions[this.qIndex];
+    if (!q || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const uttr = new SpeechSynthesisUtterance(q.native);
+    uttr.lang = 'ru-RU';
+    window.speechSynthesis.speak(uttr);
+  }
+
+  speakAnswerSummary(q) {
+    if (!this.sfx.enabled || !('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const uttr = new SpeechSynthesisUtterance(`${q.reading}。${q.country}`);
+    uttr.lang = 'ja-JP';
+    uttr.rate = 1.15;
+    window.speechSynthesis.speak(uttr);
+  }
+
+  nextQuestion() {
+    if (this.isAnswering) return;
+    if (this.qIndex + 1 < this.questions.length && this.lives > 0) {
+      this.qIndex++;
+      this.loadQuestion();
+    } else {
+      this.showResult();
+    }
+  }
+
+  showResult() {
+    this.worker.postMessage('stop');
+    if (this.recognition && this.micActive) {
+      this.recognition.stop();
+    }
+    document.getElementById('screenBattle').classList.add('hidden');
+    document.getElementById('screenResult').classList.remove('hidden');
+
+    const total = this.history.length;
+    const correctList = this.history.filter(h => h.isCorrect);
+    const correctCount = correctList.length;
+    const avgTime = correctCount > 0
+      ? (correctList.reduce((acc, c) => acc + c.elapsed, 0) / correctCount).toFixed(1)
+      : '-';
+
+    const ratio = total > 0 ? correctCount / total : 0;
+    let rankText = '見習いトラベラー（Cランク）';
+    if (ratio === 1) rankText = '現地文字マスター・免許皆伝（Sランク）';
+    else if (ratio >= 0.75) rankText = 'GeoGuessr 師範代（Aランク）';
+    else if (ratio >= 0.5) rankText = '中級ナビゲーター（Bランク）';
+
+    document.getElementById('resRankTitle').textContent = rankText;
+    document.getElementById('resScore').textContent = this.score;
+    document.getElementById('resCorrect').textContent = `${correctCount} / ${total}`;
+    document.getElementById('resAvgTime').textContent = avgTime === '-' ? '-' : `${avgTime}s`;
+
+    const wrongCount = total - correctCount;
+    const btnRetryWrong = document.getElementById('btnRetryWrong');
+    if (wrongCount > 0) {
+      btnRetryWrong.classList.remove('hidden');
+      btnRetryWrong.textContent = `読めなかった ${wrongCount} 都市だけ特訓する`;
+    } else {
+      btnRetryWrong.classList.add('hidden');
+    }
+
+    const listEl = document.getElementById('resHistoryList');
+    listEl.innerHTML = this.history.map((item, idx) => `
+      <div class="bg-zinc-950 border ${item.isCorrect ? 'border-zinc-800' : 'border-red-500/50'} rounded-lg p-3 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+          <span class="px-2 py-0.5 rounded text-xs font-black ${item.isCorrect ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'}">
+            ${item.isCorrect ? '撃破' : '未撃破'}
+          </span>
+          <div>
+            <div class="flex items-baseline gap-2">
+              <span class="text-lg font-black text-white">${item.question.native}</span>
+              <span class="text-sm font-bold text-amber-400">＝ ${item.question.reading}</span>
+              <span class="text-xs text-zinc-500">(${item.question.country})</span>
+            </div>
+            <div class="text-xs text-zinc-400 mt-0.5">
+              ${item.question.breakdown.map(([c, s]) => `${c}[${s}]`).join(' + ')}
+            </div>
+          </div>
+        </div>
+        <div class="text-xs font-mono text-zinc-400">
+          ${item.isCorrect ? `${item.elapsed}s` : item.userAnswer}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  retryWrongOnly() {
+    const wrongs = this.history.filter(h => !h.isCorrect).map(h => h.question);
+    if (wrongs.length > 0) {
+      this.startPack(this.currentPack, wrongs);
+    }
+  }
+
+  restartCurrentPack() {
+    this.startPack(this.currentPack);
+  }
+
+  showHome() {
+    this.isAnswering = false;
+    this.worker.postMessage('stop');
+    if (this.recognition && this.micActive) {
+      this.recognition.stop();
+    }
+    document.getElementById('screenBattle').classList.add('hidden');
+    document.getElementById('screenResult').classList.add('hidden');
+    document.getElementById('screenHome').classList.remove('hidden');
+  }
+
+  bindShortcuts() {
+    window.addEventListener('keydown', (e) => {
+      // モーダル表示中
+      if (!document.getElementById('modalCheatSheet').classList.contains('hidden')) {
+        if (e.key === 'Escape') this.toggleCheatSheet();
+        return;
+      }
+      // バトル画面
+      if (!document.getElementById('screenBattle').classList.contains('hidden')) {
+        if (this.isAnswering) {
+          if (e.key === 'Escape') {
+            e.preventDefault();
+            this.giveUpQuestion();
+          } else if (e.key === ' ' && this.playStyle === 'buzzer' && !this.isBuzzerFrozen && document.activeElement.tagName !== 'INPUT') {
+            e.preventDefault();
+            this.triggerBuzzer();
+          } else if ((e.key === 'h' || e.key === 'H') && document.activeElement.tagName !== 'INPUT') {
+            e.preventDefault();
+            this.revealHint();
+          }
+        } else {
+          // 解説表示中にEnterまたはSpaceで次の問題へ
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this.nextQuestion();
+          }
+        }
+      }
+    });
+  }
+}
+
+const app = new GeoGoApp();
+</script>
+</body>
+</html>
