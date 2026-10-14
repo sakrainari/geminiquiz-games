@@ -111,16 +111,20 @@
   }
 
   .sign-thai-green {
-    background: linear-gradient(180deg, #065f46 0%, #047857 100%);
+    background: linear-gradient(180deg, #007a3d 0%, #00582c 100%);
     border: 4px solid #ffffff;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 0 3px #007a3d, 0 16px 40px rgba(0,0,0,0.85);
+    color: #ffffff;
   }
   .sign-thai-kmpost {
-    background: #f8fafc;
-    color: #0f172a;
-    border: 4px solid #0f172a;
-    border-radius: 40px 40px 8px 8px;
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7);
+    background: linear-gradient(180deg, #18181b 0%, #18181b 28%, #ffffff 28%, #f4f4f5 100%);
+    border: 4px solid #18181b;
+    box-shadow: 0 0 0 3px #ffffff, 0 16px 40px rgba(0,0,0,0.85);
+    color: #09090b;
+  }
+  .sign-thai-kmpost #signHeaderSub {
+    color: #ffffff;
+    opacity: 1;
   }
 
 </style>
@@ -1411,14 +1415,14 @@ class GeoGoApp {
 
   renderPackGrid() {
     const grid = document.getElementById('packGrid');
-    const allQuestions = GEO_PACKS.flatMap(p => p.questions);
+    const allQuestions = [...new Map(GEO_PACKS.flatMap(p => p.questions).map(q => [q.native, q])).values()];
     const packsWithAll = [
       ...GEO_PACKS,
       {
         id: 'all_random',
         title: '全文字種・総合実践サバイバル',
         subtitle: 'キリル・ギリシャ・東欧・ハングル・タイ・アラビアからランダム10問！',
-        badge: '総合腕試し（全24都市）',
+        badge: `総合腕試し（全${allQuestions.length}都市）`,
         questions: allQuestions
       }
     ];
@@ -1529,7 +1533,7 @@ class GeoGoApp {
     if (customQuestions) {
       this.questions = [...customQuestions];
     } else if (packId === 'all_random') {
-      const all = GEO_PACKS.flatMap(p => p.questions);
+      const all = [...new Map(GEO_PACKS.flatMap(p => p.questions).map(q => [q.native, q])).values()];
       this.questions = all.sort(() => Math.random() - 0.5).slice(0, 10);
       this.currentPack = 'all_random';
     } else {

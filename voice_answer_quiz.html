@@ -108,7 +108,7 @@
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
 
 <!-- Global Portal Navigation Bar -->
-<div class="bg-slate-900/95 border-b border-slate-800 backdrop-blur px-4 py-2.5 flex items-center justify-between text-xs sticky top-0 z-50 text-white">
+<div class="bg-slate-900/95 border-b border-slate-800 backdrop-blur px-4 py-2.5 flex items-center justify-between text-xs relative z-50 text-white">
   <div class="flex items-center gap-3">
     <a href="index.html" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold transition">
       <span>◀</span>
@@ -312,7 +312,7 @@
                         <div>
                             <div class="flex items-center justify-between mb-4">
                                 <div class="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
-                                    <i data-lucide="globe-2" class="w-6 h-6"></i>
+                                    <i data-lucide="languages" class="w-6 h-6"></i>
                                 </div>
                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
                                     国名・首都・地形
@@ -326,31 +326,6 @@
                             </p>
                         </div>
                         <button onclick="app.startBuiltInQuiz('geography')" class="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-[0.99] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-emerald-600/20 transition-all">
-                            <i data-lucide="play" class="w-4 h-4 fill-current"></i>
-                            <span>このモードで挑戦</span>
-                        </button>
-                    </div>
-
-                    
-                    <!-- Category 4: World Scripts & Geo Sign -->
-                    <div class="group relative rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl hover:border-rose-500/50 dark:hover:border-rose-500/50 transition-all flex flex-col justify-between">
-                        <div>
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center">
-                                    <i data-lucide="globe-2" class="w-6 h-6"></i>
-                                </div>
-                                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300">
-                                    タイ・キリル・アラビア等
-                                </span>
-                            </div>
-                            <h4 class="text-lg font-extrabold mb-2 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
-                                海外地名・世界の文字
-                            </h4>
-                            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                                「กรุงเทพมหานคร」「Москва」「부산」「دبي」など、現地文字で書かれた都市名を声に出して撃破！
-                            </p>
-                        </div>
-                        <button onclick="app.startBuiltInQuiz('geosign')" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 active:scale-[0.99] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-rose-600/20 transition-all">
                             <i data-lucide="play" class="w-4 h-4 fill-current"></i>
                             <span>このモードで挑戦</span>
                         </button>
@@ -375,6 +350,32 @@
                             </p>
                         </div>
                         <button onclick="app.startBuiltInQuiz('general')" class="w-full py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.99] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-indigo-600/20 transition-all">
+                            <i data-lucide="play" class="w-4 h-4 fill-current"></i>
+                            <span>このモードで挑戦</span>
+                        </button>
+                    </div>
+
+
+                    
+                    <!-- Category 4: World Scripts & Geo Sign -->
+                    <div class="group relative rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:shadow-xl hover:border-rose-500/50 dark:hover:border-rose-500/50 transition-all flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+                                    <i data-lucide="languages" class="w-6 h-6"></i>
+                                </div>
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300">
+                                    タイ・キリル・アラビア等
+                                </span>
+                            </div>
+                            <h4 class="text-lg font-extrabold mb-2 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
+                                海外地名・世界の文字
+                            </h4>
+                            <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
+                                「กรุงเทพมหานคร」「Москва」「부산」「دبي」など、現地文字で書かれた都市名を声に出して撃破！
+                            </p>
+                        </div>
+                        <button onclick="app.startBuiltInQuiz('geosign')" class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 active:scale-[0.99] text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md shadow-rose-600/20 transition-all">
                             <i data-lucide="play" class="w-4 h-4 fill-current"></i>
                             <span>このモードで挑戦</span>
                         </button>
