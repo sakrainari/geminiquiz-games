@@ -33,3 +33,11 @@ test('permission denial closes the audio context and reports an error',async()=>
   const f=fixture(async()=>{throw Object.assign(new Error('denied'),{name:'NotAllowedError'});});
   await assert.rejects(f.probe.start(),{name:'NotAllowedError'});assert.equal(f.getClosed(),1);assert.equal(f.frames.size,0);
 });
+test('default animation callbacks retain the browser Window receiver',async t=>{
+  const oldRaf=globalThis.requestAnimationFrame,oldCaf=globalThis.cancelAnimationFrame;
+  t.after(()=>{if(oldRaf)globalThis.requestAnimationFrame=oldRaf;else delete globalThis.requestAnimationFrame;if(oldCaf)globalThis.cancelAnimationFrame=oldCaf;else delete globalThis.cancelAnimationFrame;});
+  globalThis.requestAnimationFrame=function(){assert.equal(this,globalThis,'requestAnimationFrame requires Window receiver');return 1;};
+  globalThis.cancelAnimationFrame=function(){assert.equal(this,globalThis,'cancelAnimationFrame requires Window receiver');};
+  const f=fixture();const probe=new InputProbe({mediaDevices:f.probe.mediaDevices,AudioContext:f.probe.AudioContext,onLevel(){},onDevice(){}});
+  assert.ok(await probe.start());probe.stop();
+});

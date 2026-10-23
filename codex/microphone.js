@@ -10,7 +10,7 @@ const MicDiagnostics = (()=>{
     return 'まず①の音量テストから始めてください。';
   }
   class InputProbe {
-    constructor({mediaDevices,AudioContext,onLevel,onDevice,raf=requestAnimationFrame,caf=cancelAnimationFrame}){
+    constructor({mediaDevices,AudioContext,onLevel,onDevice,raf=callback=>globalThis.requestAnimationFrame(callback),caf=id=>globalThis.cancelAnimationFrame(id)}){
       Object.assign(this,{mediaDevices,AudioContext,onLevel,onDevice,raf,caf});this.generation=0;
     }
     async start(){
