@@ -683,7 +683,8 @@ const CODEX_QUESTIONS = [
     "answer": "ストーンヘンジ",
     "aliases": [
       "すとーんへんじ",
-      "Stonehenge"
+      "Stonehenge",
+      "ストーン返事"
     ],
     "hint": "夏至の日の出との配置も知られます。",
     "explanation": "ストーンヘンジは周囲の遺跡群とともに登録され、先史時代の儀礼や社会を考える手掛かりです。"

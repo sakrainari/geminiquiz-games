@@ -16,6 +16,17 @@ test('Codex bank has 100 unique stable IDs, 25 per category, and all answers mat
   for(const category of ['heritage','geography','general','geosign'])assert.equal(questions.filter(q=>q.category===category).length,25);
   for(const q of questions){assert.ok(q.explanation);assert.ok(q.hint);assert.ok(match(q.answer,[q.answer,...q.aliases]));}
 });
+test('Stonehenge accepts the reported speech transcription without accepting partial or negative answers',()=>{
+  const question=questions.find(q=>q.answer==='ストーンヘンジ');
+  for(const input of ['ストーン返事','ストーン 返事','ストーン返事です']){
+    const game=new Session([question],{seconds:0,now:()=>0,match});
+    game.buzz();assert.equal(game.submit(input),true,input);
+    assert.equal(game.history[0].status,'correct');
+  }
+  const answers=[question.answer,...question.aliases];
+  for(const input of ['ストーン','返事','ストーン返事ではない','イエローストーン'])assert.equal(match(input,answers),false,input);
+});
+
 test('reading has no answer deadline; buzz freezes exact position and starts a fresh clock',()=>{
   const {game,setTime}=fixture();setTime(50000);game.tick();assert.equal(game.phase,'reading');
   assert.equal(game.revealed,game.question.q.length);assert.ok(game.buzz());assert.equal(game.remaining,12);
