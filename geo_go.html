@@ -128,11 +128,13 @@
   }
 
 </style>
+<script src="quiz-core.js"></script>
+<script src="question-bank.js"></script>
 </head>
-<body class="min-h-screen flex flex-col relative overflow-hidden">
+<body class="min-h-screen flex flex-col relative overflow-x-hidden">
 
 <!-- Global Portal Navigation Bar -->
-<div class="bg-zinc-950/95 border-b border-zinc-800 backdrop-blur px-4 py-2.5 flex items-center justify-between text-xs sticky top-0 z-50">
+<div class="bg-zinc-950/95 border-b border-zinc-800 backdrop-blur px-4 py-2.5 flex flex-wrap gap-2 items-center justify-between text-xs sticky top-0 z-50">
   <div class="flex items-center gap-3">
     <a href="index.html" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-amber-400 font-bold transition">
       <span>◀</span>
@@ -1142,6 +1144,19 @@ const GEO_PACKS = [
 ];
 
 // ==================== Web Audio API シンセサイザー効果音 ====================
+const groups = {
+  thai_master: ['th'], cyrillic: ['bg','uk','sr','mk'],
+  greek_east: ['el','pl','cs','ro'], asia_mideast: ['ko','ar']
+};
+for (const pack of GEO_PACKS) {
+  const additions = QuizBank.cities.filter(c => (groups[pack.id] || []).includes(c.lang));
+  pack.questions.push(...additions);
+  if (pack.id === 'thai_master') {
+    pack.title = '【特設】タイ文字・主要19都市＆キロポスト';
+    pack.badge = 'イチオシ・全19都市';
+  }
+}
+
 class SoundEngine {
   constructor() {
     this.ctx = null;
@@ -1290,6 +1305,10 @@ class GeoGoApp {
 
     this.recognition = null;
     this.micActive = false;
+    this.micEnabled = true;
+    this.micBlocked = false;
+    this.feedbackTimer = null;
+    this.autoNextTimer = null;
     this.initSpeechRecognition();
     this.renderPackGrid();
     this.bindShortcuts();
@@ -1314,21 +1333,7 @@ class GeoGoApp {
   }
 
   checkAnswerMatch(userInput, question) {
-    const normUser = this.normalizeGeoText(userInput);
-    if (!normUser || normUser.length < 2) return false;
-
-    for (const candidate of question.accepted) {
-      const normCand = this.normalizeGeoText(candidate);
-      if (!normCand) continue;
-      if (normUser === normCand) return true;
-      // 音声認識で前後に余計な語が入った場合の部分一致許容
-      if (normCand.length >= 3 && normUser.includes(normCand)) return true;
-      // 促音（っ）の有無の揺れ吸収（例：ウラジオストク vs ウラジオストック）
-      const noTsuUser = normUser.replace(/っ/g, '');
-      const noTsuCand = normCand.replace(/っ/g, '');
-      if (noTsuUser === noTsuCand) return true;
-    }
-    return false;
+    return QuizCore.matches(userInput, question.accepted);
   }
 
   initSpeechRecognition() {
@@ -1351,8 +1356,19 @@ class GeoGoApp {
       this.micActive = false;
       this.updateMicUI();
       // バトル回答中は自動でマイクを再接続して途切れを防ぐ
-      if (this.isAnswering) {
+      if (this.isAnswering && this.micEnabled && !this.micBlocked) {
         try { this.recognition.start(); } catch (e) {}
+      }
+    };
+
+    this.recognition.onerror = (event) => {
+      // A denied permission or network failure must never create a restart loop.
+      if (event.error !== 'no-speech' && event.error !== 'aborted') {
+        this.micBlocked = true;
+        this.micEnabled = false;
+        this.micActive = false;
+        this.updateMicUI();
+        document.getElementById('voiceInterimText').textContent = 'マイクを利用できません。文字入力で続けられます。';
       }
     };
 
@@ -1389,6 +1405,10 @@ class GeoGoApp {
   }
 
   updateMicUI() {
+    if (!this.recognition) {
+      document.getElementById('micStatusText').textContent = '音声非対応・文字入力で回答できます';
+      return;
+    }
     const dot = document.getElementById('micDot');
     const txt = document.getElementById('micStatusText');
     const btn = document.getElementById('btnMic');
@@ -1405,10 +1425,14 @@ class GeoGoApp {
 
   toggleMic() {
     if (!this.recognition) return;
-    if (this.micActive) {
-      this.isAnswering = false;
-      this.recognition.stop();
+    if (this.micEnabled && !this.micBlocked) {
+      this.micEnabled = false;
+      this.micActive = false;
+      this.recognition.abort();
+      this.updateMicUI();
     } else {
+      this.micEnabled = true;
+      this.micBlocked = false;
       try { this.recognition.start(); } catch (e) {}
     }
   }
@@ -1529,17 +1553,18 @@ class GeoGoApp {
   }
 
   startPack(packId, customQuestions = null) {
+    this.clearPending();
     this.sfx.init();
     if (customQuestions) {
       this.questions = [...customQuestions];
     } else if (packId === 'all_random') {
       const all = [...new Map(GEO_PACKS.flatMap(p => p.questions).map(q => [q.native, q])).values()];
-      this.questions = all.sort(() => Math.random() - 0.5).slice(0, 10);
+      this.questions = QuizCore.shuffle(all).slice(0, 10);
       this.currentPack = 'all_random';
     } else {
       const found = GEO_PACKS.find(p => p.id === packId);
       this.currentPack = packId;
-      this.questions = [...found.questions].sort(() => Math.random() - 0.5);
+      this.questions = QuizCore.shuffle(found.questions);
     }
 
     this.qIndex = 0;
@@ -1556,6 +1581,7 @@ class GeoGoApp {
   }
 
   loadQuestion() {
+    this.clearPending();
     const q = this.questions[this.qIndex];
     this.isAnswering = true;
     this.isBuzzerFrozen = false;
@@ -1604,7 +1630,7 @@ class GeoGoApp {
 
     // 出題効果音＆マイク起動＆タイマー開始
     this.sfx.playSpawn();
-    if (this.recognition && !this.micActive) {
+    if (this.recognition && this.micEnabled && !this.micBlocked && !this.micActive) {
       try { this.recognition.start(); } catch (e) {}
     }
     this.worker.postMessage('start');
@@ -1711,6 +1737,7 @@ class GeoGoApp {
   completeQuestion(isCorrect, userAnswer) {
     if (!this.isAnswering) return;
     this.isAnswering = false;
+    if (this.micActive) this.recognition.abort();
     this.worker.postMessage('stop');
     document.getElementById('crisisOverlay').classList.add('hidden');
     document.getElementById('buzzerOverlay').classList.add('hidden');
@@ -1758,7 +1785,7 @@ class GeoGoApp {
     document.getElementById('hudLives').innerHTML = '♥'.repeat(this.lives) + '<span class="text-zinc-700">' + '♥'.repeat(Math.max(0, this.maxLives - this.lives)) + '</span>';
 
     // 少し待ってからスタンプを薄くし、詳細解説パネルを表示
-    setTimeout(() => {
+    this.feedbackTimer = setTimeout(() => {
       stampOverlay.classList.add('hidden');
       this.showExplanation(q, isCorrect);
     }, 850);
@@ -1777,7 +1804,7 @@ class GeoGoApp {
     document.getElementById('expCountryBadge').textContent = `${q.country} [${q.script}]`;
     document.getElementById('expNativeTitle').textContent = q.native;
     document.getElementById('expReadingTitle').textContent = q.reading;
-    document.getElementById('expRomanTitle').textContent = `(${q.roman})`;
+    document.getElementById('expRomanTitle').textContent = q.roman ? `(${q.roman})` : '';
     document.getElementById('expGeoNote').textContent = q.note;
 
     const cards = document.getElementById('expCharCards');
@@ -1792,8 +1819,8 @@ class GeoGoApp {
     this.speakAnswerSummary(q);
 
     if (this.autoNext) {
-      setTimeout(() => {
-        if (!this.isAnswering && !document.getElementById('screenBattle').classList.contains('hidden')) {
+      this.autoNextTimer = setTimeout(() => {
+        if (this.autoNext && !this.isAnswering && !document.getElementById('screenBattle').classList.contains('hidden')) {
           this.nextQuestion();
         }
       }, 3600);
@@ -1805,7 +1832,7 @@ class GeoGoApp {
     if (!q || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     const uttr = new SpeechSynthesisUtterance(q.native);
-    uttr.lang = 'ru-RU';
+    uttr.lang = q.lang || (q.signStyle?.startsWith('sign-thai') ? 'th-TH' : q.script.includes('ハングル') ? 'ko-KR' : q.script.includes('ギリシャ') ? 'el-GR' : q.script.includes('アラビア') ? 'ar' : 'ru-RU');
     window.speechSynthesis.speak(uttr);
   }
 
@@ -1829,6 +1856,8 @@ class GeoGoApp {
   }
 
   showResult() {
+    this.clearPending();
+    this.isAnswering = false;
     this.worker.postMessage('stop');
     if (this.recognition && this.micActive) {
       this.recognition.stop();
@@ -1882,7 +1911,7 @@ class GeoGoApp {
           </div>
         </div>
         <div class="text-xs font-mono text-zinc-400">
-          ${item.isCorrect ? `${item.elapsed}s` : item.userAnswer}
+          ${item.isCorrect ? `${item.elapsed}s` : (item.userAnswer === 'TIME UP' ? '時間切れ' : 'パス')}
         </div>
       </div>
     `).join('');
@@ -1900,7 +1929,9 @@ class GeoGoApp {
   }
 
   showHome() {
+    this.clearPending();
     this.isAnswering = false;
+    if (this.micActive) this.recognition.abort();
     this.worker.postMessage('stop');
     if (this.recognition && this.micActive) {
       this.recognition.stop();
@@ -1908,6 +1939,13 @@ class GeoGoApp {
     document.getElementById('screenBattle').classList.add('hidden');
     document.getElementById('screenResult').classList.add('hidden');
     document.getElementById('screenHome').classList.remove('hidden');
+  }
+
+  clearPending() {
+    clearTimeout(this.feedbackTimer);
+    clearTimeout(this.autoNextTimer);
+    this.feedbackTimer = this.autoNextTimer = null;
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   }
 
   bindShortcuts() {

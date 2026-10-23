@@ -104,6 +104,8 @@
         ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.4); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(156, 163, 175, 0.7); }
     </style>
+    <script src="quiz-core.js"></script>
+    <script src="question-bank.js"></script>
 </head>
 <body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
 
@@ -257,9 +259,11 @@
                         <span>出題数・読み上げ速度</span>
                     </label>
                     <div class="flex items-center gap-2">
-                        <div class="flex-1 grid grid-cols-2 gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/70 dark:border-slate-800">
+                        <div class="flex-1 grid grid-cols-2 sm:grid-cols-4 gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/70 dark:border-slate-800">
                             <button onclick="app.setQuestionLimit(5)" id="limit-5" class="py-2 px-2 rounded-lg text-xs font-extrabold transition-all bg-indigo-600 text-white">5問</button>
                             <button onclick="app.setQuestionLimit(8)" id="limit-8" class="py-2 px-2 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">8問</button>
+                            <button onclick="app.setQuestionLimit(20)" id="limit-20" class="py-2 px-2 rounded-lg text-xs font-bold">20問</button>
+                            <button onclick="app.setQuestionLimit(0)" id="limit-0" class="py-2 px-2 rounded-lg text-xs font-bold">全問</button>
                         </div>
                         <select id="char-speed-select" onchange="app.setCharSpeed(this.value)" class="py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none">
                             <option value="110">文字速度: ゆっくり</option>
@@ -270,6 +274,11 @@
                 </div>
             </div>
 
+            <div class="rounded-xl border border-emerald-500/40 bg-emerald-950/20 p-4 text-sm space-y-2">
+                <p id="builtin-count" class="font-bold"></p>
+                <p class="text-xs text-slate-400">内蔵問題はAPIキー不要。声でも文字入力でも遊べます。同じカテゴリでは一巡するまで未出題の問題を優先します。</p>
+                <button onclick="app.startBuiltInQuiz('all')" class="px-4 py-2 rounded-lg bg-indigo-600 text-white font-bold">全カテゴリ混合で挑戦</button>
+            </div>
             <!-- Built-in Categories -->
             <div class="space-y-4">
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -419,6 +428,13 @@
                             </div>
                         </div>
 
+                        <div class="space-y-2">
+                            <label for="ai-api-key" class="block text-xs font-bold">Gemini APIキー（AI生成のみ必要）</label>
+                            <input id="ai-api-key" type="password" autocomplete="off" spellcheck="false" placeholder="ご自身のAPIキー" class="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-sm">
+                            <label for="ai-model" class="block text-xs font-bold">利用できるモデルID</label>
+                            <input id="ai-model" autocomplete="off" placeholder="例: gemini-3.8-flash" class="w-full p-2 rounded-lg bg-slate-900 border border-slate-700 text-sm">
+                            <p class="text-xs text-slate-300">キーは保存しません。生成時にテーマとキーをGoogleへ送信します。利用枠により料金が発生する場合があります。生成された問題の正確性は保証されません。</p>
+                        </div>
                         <!-- Quick Topic Preset Chips -->
                         <div class="flex flex-wrap gap-1.5">
                             <button onclick="app.setAITopic('世界遺産検定2級の重要遺産')" class="text-[11px] px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-indigo-100 transition">🏛️ 世界遺産2級</button>
@@ -839,7 +855,7 @@
                         answer: "チェンマイ",
                         aliases: ["チェンマイ", "ちぇんまい", "チエンマイ", "chiang mai"],
                         hint: "「新しい街」という意味を持つタイ北部の美しい古都です。",
-                        explanation: "「เชียง（チェン=街）」と「ใหม่（マイ=新しい）」で構成されるタイ第2の都市です。"
+                        explanation: "「เชียง（チェン=街）」と「ใหม่（マイ=新しい）」で構成される北部の主要都市です。"
                     },
                     {
                         q: "タイの世界的リゾート都市で、現地標識に「พัทยา」と記される都市はどこでしょう？",
@@ -925,11 +941,11 @@
                         explanation: "白神山地は1993年に屋久島とともに日本初の世界自然遺産に登録されました。東アジア最大級の原生的なブナ林がほぼ手つかずのまま残されています。"
                     },
                     {
-                        q: "スペインのバルセロナにあり、建築家アントニ・ガウディが設計を手がけ、2026年にメインタワーであるイエス・キリストの塔が完成を迎えたことで知られる未完の教会は何でしょう？",
+                        q: "スペインのバルセロナにあり、建築家アントニ・ガウディが設計を手がけ、「聖家族教会」の名でも知られる教会は何でしょう？",
                         answer: "サグラダ・ファミリア",
                         aliases: ["サグラダファミリア", "サグラダ・ファミリア", "さぐらだふぁみりあ", "聖家族教会", "せいかぞくきょうかい", "ガウディの作品群", "アントニ・ガウディの作品群", "sagrada familia"],
                         hint: "日本語では「聖家族贖罪教会」と訳される、バルセロナの象徴的な大聖堂です。",
-                        explanation: "「アントニ・ガウディの作品群」の一部として世界遺産に登録されているサグラダ・ファミリアは、1882年に着工され、ガウディ没後100年となる2026年に中心のイエス・キリストの塔が完成しました。"
+                        explanation: "「アントニ・ガウディの作品群」の一部として世界遺産に登録されているサグラダ・ファミリアは、1882年に着工されました。世界遺産の登録対象は地下聖堂と生誕のファサードです。"
                     },
                     {
                         q: "ペルーのアンデス山脈、標高約2,430メートルの尾根に位置する「空中都市」とも呼ばれる15世紀インカ帝国の遺跡で、文化遺産と自然遺産の両方の価値を持つ複合遺産は何でしょう？",
@@ -1007,7 +1023,7 @@
                         explanation: "トルコ共和国はボスポラス海峡を挟んでアジア側（アナトリア半島）とヨーロッパ側にまたがる国で、首都は内陸部のアンカラです。"
                     },
                     {
-                        q: "ネパールと中国（チベット自治区）の国境にそびえ立つ、標高8,848メートルで世界最高峰の山は何でしょう？",
+                        q: "ネパールと中国（チベット自治区）の国境にそびえ立つ、世界最高峰の山は何でしょう？",
                         answer: "エベレスト",
                         aliases: ["エベレスト", "えべれすと", "チョモランマ", "ちょもらんま", "サガルマータ", "さがるまーた", "エベレスト山", "everest"],
                         hint: "チベット語では「チョモランマ」、ネパール語では「サガルマータ」とも呼ばれます。",
@@ -1068,11 +1084,11 @@
                         explanation: "「瓢箪から駒」は、小さな口しかないひょうたんから大きな馬（駒）が飛び出すはずがないことから、予想もしない出来事や冗談で言ったことが実現するたとえとして使われます。"
                     },
                     {
-                        q: "人間の体にある臓器のなかで、解毒作用や胆汁の生成、栄養分の貯蔵などを行い、重さが約1.2〜1.5キログラムと最も大きく重い臓器は何でしょう？",
+                        q: "人間の体にある臓器のなかで、解毒作用や胆汁の生成、栄養分の貯蔵などを行い、重さが約1.2〜1.5キログラムの大きな臓器は何でしょう？",
                         answer: "肝臓",
                         aliases: ["肝臓", "かんぞう", "カンゾウ", "レバー", "ればー", "liver"],
                         hint: "少々のダメージがあっても自覚症状が出にくいため「沈黙の臓器」とも呼ばれます。",
-                        explanation: "肝臓は腹部の右上にある人体最大の臓器で、アルコールなどの解毒、エネルギーの代謝・貯蔵、消化を助ける胆汁の合成など500種類以上の働きを担っています。"
+                        explanation: "肝臓は腹部の右上にある人体最大の内臓で、アルコールなどの解毒、エネルギーの代謝・貯蔵、消化を助ける胆汁の合成など500種類以上の働きを担っています。"
                     },
                     {
                         q: "1901年に第1回授賞式が行われたノーベル賞は、スウェーデンの発明家アルフレッド・ノーベルの遺言によって創設されました。彼が発明して巨万の富を築いた爆薬は何でしょう？",
@@ -1089,6 +1105,10 @@
          * Sound Effects Engine (Web Audio API Synthesizer)
          * Generates quiz chimes ("Question!", "Ping-Pong!", "Bubu!", "Fanfare!") without external audio files.
          */
+        for (const [key, additions] of Object.entries(QuizBank.voice)) {
+            BUILTIN_QUIZZES[key].questions.push(...additions);
+        }
+
         class SoundEffects {
             constructor() {
                 this.ctx = null;
@@ -1249,34 +1269,7 @@
              * Checks if user's spoken/typed text matches the canonical answer or any of its aliases
              */
             static isMatch(userRawInput, canonicalAnswer, aliases = []) {
-                const normUser = this.normalize(userRawInput);
-                if (!normUser) return false;
-
-                // Combine canonical answer + aliases
-                const candidateList = [canonicalAnswer, ...(aliases || [])];
-
-                for (const candidate of candidateList) {
-                    const normCandidate = this.normalize(candidate);
-                    if (!normCandidate) continue;
-
-                    // 1. Exact match after normalization
-                    if (normUser === normCandidate) {
-                        return true;
-                    }
-
-                    // 2. Substring match: If user says "答えは姫路城です" -> contains "姫路城"
-                    // Guard against overly short 1-character false positives unless exact
-                    if (normCandidate.length >= 2 && normUser.includes(normCandidate)) {
-                        return true;
-                    }
-
-                    // 3. Reverse containment if user said core name e.g. "アブシンベル" for "アブ・シンベル神殿" (already in aliases, but extra safety)
-                    if (normUser.length >= 3 && normCandidate.includes(normUser)) {
-                        return true;
-                    }
-                }
-
-                return false;
+                return QuizCore.matches(userRawInput, [canonicalAnswer, ...(aliases || [])]);
             }
         }
 
@@ -1286,6 +1279,7 @@
                 this.ttsEnabled = true;
                 this.autoMicEnabled = true;
                 this.questionLimit = 5;
+                this.questionPools = new Map();
 
                 // Buzzer Quiz Settings
                 this.quizMode = 'buzzer'; // 'buzzer' | 'standard'
@@ -1513,14 +1507,11 @@
 
             setQuestionLimit(num) {
                 this.questionLimit = num;
-                const btn5 = document.getElementById('limit-5');
-                const btn8 = document.getElementById('limit-8');
-                if (num === 5) {
-                    btn5.className = 'py-2 px-2 rounded-lg text-xs font-extrabold transition-all bg-indigo-600 text-white';
-                    btn8.className = 'py-2 px-2 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800';
-                } else {
-                    btn8.className = 'py-2 px-2 rounded-lg text-xs font-extrabold transition-all bg-indigo-600 text-white';
-                    btn5.className = 'py-2 px-2 rounded-lg text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800';
+                for (const value of [5, 8, 20, 0]) {
+                    const button = document.getElementById(`limit-${value}`);
+                    button.setAttribute('aria-pressed', String(value === num));
+                    button.className = 'py-2 px-2 rounded-lg text-xs font-bold transition-all ' +
+                        (value === num ? 'bg-indigo-600 text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800');
                 }
             }
 
@@ -1688,16 +1679,26 @@
 
             /* ================= QUIZ FLOW & BUZZER ENGINE ================= */
             startBuiltInQuiz(categoryKey) {
-                const pack = BUILTIN_QUIZZES[categoryKey];
+                const pack = categoryKey === 'all'
+                    ? {title:'全カテゴリ混合クイズ', questions:Object.values(BUILTIN_QUIZZES).flatMap(p => p.questions)}
+                    : BUILTIN_QUIZZES[categoryKey];
                 if (!pack) return;
-
-                const shuffled = [...pack.questions].sort(() => Math.random() - 0.5);
-                const selected = shuffled.slice(0, Math.min(this.questionLimit, shuffled.length));
-
+                let pool = this.questionPools.get(categoryKey) || [];
+                const count = Math.min(this.questionLimit || pack.questions.length, pack.questions.length);
+                const selected = [];
+                while (selected.length < count) {
+                    if (!pool.length) pool = QuizCore.shuffle(pack.questions.filter(q => !selected.includes(q)));
+                    selected.push(pool.pop());
+                }
+                this.questionPools.set(categoryKey, pool);
                 this.beginQuizSession(pack.title, selected);
             }
 
             async generateAIQuiz() {
+                if (!document.getElementById('ai-api-key').value.trim() || !document.getElementById('ai-model').value.trim()) {
+                    this.showToast('AI生成にはAPIキーとモデルIDが必要です。内蔵100問はそのまま遊べます。', 'warning');
+                    return;
+                }
                 const topicInput = document.getElementById('ai-topic-input');
                 const difficultySelect = document.getElementById('ai-difficulty');
                 const topic = topicInput.value.trim() || '世界遺産と世界の地理';
@@ -1706,8 +1707,8 @@
                 const btn = document.getElementById('btn-generate-ai');
                 const originalHTML = btn.innerHTML;
                 btn.disabled = true;
-                btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>「${topic}」のクイズをAI生成中...</span>`;
-                lucide.createIcons();
+                btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>「${this.escapeHtml(topic)}」のクイズをAI生成中...</span>`;
+                window.lucide?.createIcons();
 
                 try {
                     const generatedQuestions = await this.fetchGeminiQuiz(topic, difficulty, 5);
@@ -1721,13 +1722,15 @@
                 } finally {
                     btn.disabled = false;
                     btn.innerHTML = originalHTML;
-                    lucide.createIcons();
+                    window.lucide?.createIcons();
                 }
             }
 
             async fetchGeminiQuiz(topic, difficulty, count = 5) {
-                const apiKey = "";
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+                const apiKey = document.getElementById('ai-api-key').value.trim();
+                const model = document.getElementById('ai-model').value.trim();
+                if (!apiKey || !/^[a-zA-Z0-9._-]+$/.test(model)) throw new Error('API設定が不正です');
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
 
                 const systemInstruction = `あなたは早押し音声回答型クイズアプリの問題作成プロフェッショナルです。
 指定されたテーマと難易度に基づき、早押しクイズとして後半に向けてヒントが絞られていく良質な一問一答クイズを${count}問作成してください。
@@ -1769,17 +1772,22 @@
                     try {
                         const response = await fetch(apiUrl, {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
+                            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+                            signal: AbortSignal.timeout(30000),
                             body: JSON.stringify(payload)
                         });
-                        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                        if (!response.ok) {
+                            const error = new Error(`HTTP ${response.status}`);
+                            error.retryable = response.status === 429 || response.status >= 500;
+                            throw error;
+                        }
                         const result = await response.json();
                         const jsonText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
                         if (jsonText) {
-                            return JSON.parse(jsonText);
+                            return QuizCore.validateQuestions(JSON.parse(jsonText), count);
                         }
                     } catch (err) {
-                        if (attempt === 3) throw err;
+                        if (attempt === 3 || !err.retryable) throw err;
                         await new Promise(r => setTimeout(r, delay));
                         delay *= 2;
                     }
@@ -2407,8 +2415,15 @@
         // Initialize application when DOM is ready
         let app;
         window.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
+            window.lucide?.createIcons();
             app = new VoiceQuizApp();
+            app.setQuestionLimit(5);
+            const total = Object.values(BUILTIN_QUIZZES).reduce((sum,p) => sum+p.questions.length,0);
+            document.getElementById('builtin-count').textContent = `内蔵 ${total}問・4カテゴリ各25問`;
+            for (const key of Object.keys(BUILTIN_QUIZZES)) {
+                const button = document.querySelector(`[onclick="app.startBuiltInQuiz('${key}')"] span`);
+                button.textContent = `このモードで挑戦（全${BUILTIN_QUIZZES[key].questions.length}問）`;
+            }
         });
     </script>
 </body>
