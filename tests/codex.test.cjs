@@ -81,7 +81,7 @@ test('progressive reveal never splits emoji sequences or combining Thai characte
 test('all shipped JS parses, all local HTML dependencies exist, generated bank stays synchronized',()=>{
   for(const file of ['app.js','engine.js','questions.js'])new vm.Script(fs.readFileSync(path.join(__dirname,'../codex',file),'utf8'),{filename:file});
   const html=fs.readFileSync(path.join(__dirname,'../codex/index.html'),'utf8');
-  for(const [,ref] of html.matchAll(/(?:src|href)="([^"]+\.(?:js|css))"/g))assert.ok(fs.existsSync(path.join(__dirname,'../codex',ref)),ref);
+  for(const [,ref] of html.matchAll(/(?:src|href)="([^"]+\.(?:js|css)(?:\?[^"]*)?)"/g))assert.ok(fs.existsSync(path.join(__dirname,'../codex',ref.split('?')[0])),ref);
   const original=fs.readFileSync(path.join(__dirname,'../voice_answer_quiz.html'),'utf8');
   vm.runInContext(fs.readFileSync(path.join(__dirname,'../question-bank.js'),'utf8'),ctx);
   vm.runInContext(original.slice(original.indexOf('const BUILTIN_QUIZZES'),original.indexOf('class SoundEffects')),ctx);

@@ -22,6 +22,16 @@
 
 音声処理の仕様：[連続認識](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition/continuous)、[認識終了イベント](https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition/end_event)。自動検査ではイベントを再現しています。実マイク・各端末の認識精度は別途確認してください。
 
+### マイクが反応しない場合
+
+**[マイク確認画面](https://sakrainari.github.io/geminiquiz-games/codex/microphone.html)** で、①入力音量、②音声から文字への変換を個別にテストできます。音量テストは端末内で処理し、音声を録音・保存・送信しません。文字変換テストはブラウザの音声認識サービスを利用します。
+
+- 音量メーターが動かない場合：表示されたマイク名、Chromeの既定マイク、機器のミュート、Windowsの入力音量を確認します。
+- 音量メーターは動くが文字が出ない場合：文字変換側の「認識開始・マイク入力・発話検知・文字受信」とエラーコードを確認します。この結果だけで原因を断定しません。
+- ゲームでも接続待ち・マイク入力開始・発話検知を区別して表示します。認識開始後8秒間文字が届かない場合は確認画面を案内します。
+
+テストは手動停止でき、音量は15秒・文字変換は20秒で終了します。タブを離れた場合もマイクを解放します。ブラウザやOSの設定は自動変更しません。
+
 | ゲーム | 収録内容 |
 | --- | --- |
 | [音声早押しクイズ](https://sakrainari.github.io/geminiquiz-games/voice_answer_quiz.html) | 世界遺産・世界の地理・一般教養・海外地名の4カテゴリ各25問、計100問 |

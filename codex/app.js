@@ -9,6 +9,7 @@
   let audio=null,recognition=null,micToken=0,listening=false,renderedTurn=-1,renderedPhase='',lastReading=-1;
   let speechToken=0,settingsPaused=false,quitPaused=false,composing=false;
   let micWanted=false,micRetry=null,micFailures=0,micMutedForQuestion=false;
+  let micWatchdog=null;
   const SpeechRec=window.SpeechRecognition || window.webkitSpeechRecognition;
 
   function notice(message) {$('notice').textContent=message;$('notice').hidden=!message;}
@@ -52,12 +53,13 @@
     window.speechSynthesis.speak(utterance);
   }
   function micUI() {
-    $('mic').classList.toggle('listening',listening || micWanted);
-    $('mic').textContent=listening || micWanted?'■ マイクを止める':'◉ 声で回答する';
+    $('mic').classList.toggle('listening',listening);
+    $('mic').textContent=listening?'■ マイクを止める':micWanted?'■ 接続待ちを中止':'◉ 声で回答する';
     $('mic').disabled=!SpeechRec;
   }
   function stopMic() {
     micWanted=false;clearTimeout(micRetry);micRetry=null;
+    clearTimeout(micWatchdog);micWatchdog=null;
     micToken++;
     const old=recognition;recognition=null;listening=false;
     if(old) try {old.abort();} catch {}
@@ -75,10 +77,20 @@
       recognition=new SpeechRec();
       const rec=recognition;
       rec.lang='ja-JP';rec.interimResults=true;rec.continuous=true;rec.maxAlternatives=3;
-      rec.onstart=()=>{if(!active()){try{rec.abort();}catch{}return;}listening=true;micUI();$('mic-status').textContent='聞き取り中。言い直してOK。正解するまで続けて聞き取ります。';};
+      rec.onstart=()=>{
+        if(!active()){try{rec.abort();}catch{}return;}
+        listening=true;micUI();$('mic-status').textContent='認識サービスに接続しました。マイクの音声入力待ちです。';
+        clearTimeout(micWatchdog);
+        micWatchdog=setTimeout(()=>{if(active())$('mic-status').textContent='認識した文字が届いていません。「マイクを確認」から入力音量をテストしてください。';},8000);
+      };
+      rec.onaudiostart=()=>{if(active())$('mic-status').textContent='マイク入力を開始しました。声を待っています。';};
+      rec.onsoundstart=()=>{if(active())$('mic-status').textContent='音の入力を検知しました。発話の判定を待っています。';};
+      rec.onspeechstart=()=>{if(active())$('mic-status').textContent='発話を検知しました。文字への変換を待っています。';};
+      rec.onnomatch=()=>{if(active())$('mic-status').textContent='音声を検知しましたが文字にできませんでした。もう一度話せます。';};
       rec.onresult=event=>{
         if(!active()) return;
         micFailures=0;
+        clearTimeout(micWatchdog);micWatchdog=null;
         for(let i=event.resultIndex;i<event.results.length;i++) {
           const result=event.results[i],transcript=result[0].transcript;
           $('transcript').textContent=`認識結果：${transcript}`;
@@ -94,6 +106,7 @@
       };
       rec.onerror=event=>{
         if(!active()) return;
+        clearTimeout(micWatchdog);micWatchdog=null;
         listening=false;micUI();
         if(event.error==='network')micFailures++;
         const fatal=['not-allowed','service-not-allowed','audio-capture','language-not-supported'].includes(event.error) || micFailures>=3;
@@ -105,10 +118,11 @@
           'audio-capture':'マイクが見つかりません。文字入力で続けられます。',
           'no-speech':'聞き取りを続けています。そのまま話してください。'
         };
-        if(event.error!=='aborted') $('mic-status').textContent=messages[event.error] || '音声認識を終了しました。文字入力で続けられます。';
+        if(event.error!=='aborted') $('mic-status').textContent=(messages[event.error] || '音声認識を終了しました。文字入力で続けられます。')+`（${event.error}）`;
       };
       rec.onend=()=>{
         if(token!==micToken)return;
+        clearTimeout(micWatchdog);micWatchdog=null;
         listening=false;recognition=null;micUI();
         if(active()){
           $('mic-status').textContent='聞き取りを再接続中。そのまま話せます。';

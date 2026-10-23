@@ -10,7 +10,7 @@
   <script src="../quiz-core.js" defer></script>
   <script src="questions.js" defer></script>
   <script src="engine.js" defer></script>
-  <script src="app.js" defer></script>
+  <script src="app.js?v=mic-check-1" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#main">ゲームへ移動</a>
@@ -54,6 +54,7 @@
             </div>
             <button id="start" class="primary start-button"><span>この設定でスタート</span><span aria-hidden="true">→</span></button>
             <p class="setup-note">早押しでマイクON。文字入力も使えます。音声設定は右上から。</p>
+            <p class="setup-note"><a href="microphone.html" style="color:var(--mint);text-decoration:underline">マイクが反応しないとき：入力音量と文字変換をテスト →</a></p>
             <button id="weak-start" class="weak-button" disabled>苦手な問題を復習する <span id="weak-count">0問</span></button>
           </div>
         </div>
@@ -73,7 +74,7 @@
         </div>
         <div id="buzzer-area" class="buzzer-area"><button id="buzz" class="buzzer">早押し！<small>SPACE KEY</small></button><p id="buzzer-help">わかった瞬間に押そう。押してから回答時間が始まります。</p></div>
         <div id="answer-area" class="answer-area" hidden>
-          <div class="voice-row"><button id="mic" class="mic-button"><span aria-hidden="true">◉</span> 声で回答する</button><div><p id="mic-status">マイクを使うか、下の欄から文字で回答</p><p id="transcript" class="transcript" aria-live="polite"></p></div></div>
+          <div class="voice-row"><button id="mic" class="mic-button"><span aria-hidden="true">◉</span> 声で回答する</button><div><p id="mic-status">マイクを使うか、下の欄から文字で回答</p><p id="transcript" class="transcript" aria-live="polite"></p><a href="microphone.html" target="_blank" rel="noopener" style="font-size:11px;color:var(--mint);text-decoration:underline">マイクを確認 ↗</a></div></div>
           <form id="answer-form"><label class="sr-only" for="answer">回答を入力</label><input id="answer" type="text" placeholder="答えを入力して Enter" autocomplete="off" enterkeyhint="send"><button class="primary" type="submit">回答する <span aria-hidden="true">↵</span></button></form>
         </div>
         <div id="feedback" class="feedback" hidden aria-live="polite">

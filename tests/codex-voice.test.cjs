@@ -65,3 +65,16 @@ test('repeated network failure backs off and stops after three errors',()=>{
   for(let i=0;i<3;i++){h.records.at(-1).onerror({error:'network'});h.records.at(-1).onend();h.flush();}
   assert.equal(h.records.length,3);assert.equal(h.timers.size,0);assert.match(h.document.getElementById('mic-status').textContent,/繰り返し/);
 });
+test('service connection is distinguished from actual audio and speech detection',()=>{
+  const h=harness();h.buzz();const rec=h.records[0];
+  assert.match(h.document.getElementById('mic-status').textContent,/入力待ち/);
+  assert.equal(typeof rec.onaudiostart,'function');rec.onaudiostart();
+  assert.match(h.document.getElementById('mic-status').textContent,/マイク入力/);
+  assert.equal(typeof rec.onspeechstart,'function');rec.onspeechstart();
+  assert.match(h.document.getElementById('mic-status').textContent,/発話/);
+});
+test('a connected recognizer that produces no text directs the player to the microphone check',()=>{
+  const h=harness();h.buzz();h.flush();
+  assert.match(h.document.getElementById('mic-status').textContent,/文字が届いていません/);
+  assert.equal(h.hooks.getSession().phase,'answering');
+});
