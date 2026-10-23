@@ -11,6 +11,10 @@
   let micWanted=false,micRetry=null,micFailures=0,micMutedForQuestion=false;
   let micWatchdog=null;
   const SpeechRec=window.SpeechRecognition || window.webkitSpeechRecognition;
+  const answerMatcher=window.CodexReading.create(QuizCore);
+  answerMatcher.init().then(ready=>{
+    $('reading-dictionary-status').textContent=ready?'読み判定：準備完了。漢字交じりの回答も読みで照合します。':'読み判定の準備に失敗しました。通常の文字判定で遊べます。再読み込みで再試行できます。';
+  });
 
   function notice(message) {$('notice').textContent=message;$('notice').hidden=!message;}
   function saveWeak() {
@@ -94,11 +98,13 @@
         for(let i=event.resultIndex;i<event.results.length;i++) {
           const result=event.results[i],transcript=result[0].transcript;
           $('transcript').textContent=`認識結果：${transcript}`;
+          const reading=answerMatcher.ready?answerMatcher.toReading(transcript):null;
+          $('reading-transcript').textContent=reading?`判定用の読み：${reading}`:'';
           if(transcript.trim())session.holdSpeech();
           // Interim fragments such as 金 in 金星 must never score as a correct answer.
           if(!result.isFinal) continue;
           const candidates=Array.from(result,alternative=>alternative.transcript);
-          const matched=candidates.find(value=>QuizCore.matches(value,[session.question.answer,...session.question.aliases]));
+          const matched=candidates.find(value=>answerMatcher.matches(value,[session.question.answer,...session.question.aliases]));
           if(matched) {session.submit(matched);render();return;}
           $('answer').value=transcript;
           $('mic-status').textContent='まだ正解と一致していません。そのまま言い直してOKです。';
@@ -159,7 +165,7 @@
     stopAll();
     for(const id of ['pause-dialog','settings-dialog','quit-dialog']) if($(id).open) $(id).close();
     settingsPaused=quitPaused=false;
-    session=new CodexEngine.Session(questions,{...preferences,match:(input,answers)=>QuizCore.matches(input,answers)});
+    session=new CodexEngine.Session(questions,{...preferences,match:(input,answers)=>answerMatcher.matches(input,answers)});
     currentTitle=title;roundKind=kind;renderedTurn=-1;renderedPhase='';
     $('round-title').textContent=title;
     show('play');render();
@@ -197,7 +203,7 @@
     if(turnChanged) {
       stopAll();lastReading=-1;
       micMutedForQuestion=false;
-      $('answer').value='';$('transcript').textContent='';$('hint-text').hidden=true;
+      $('answer').value='';$('transcript').textContent='';$('reading-transcript').textContent='';$('hint-text').hidden=true;
       $('hint-text').textContent=session.question.hint;
       $('category-badge').textContent=labels[session.question.category];
       $('mic-status').textContent=SpeechRec?'マイクを使うか、下の欄から文字で回答':'このブラウザは音声非対応です。文字入力で回答できます。';
@@ -247,7 +253,7 @@
     $('judge-symbol').textContent=correct?'✓':'×';
     $('judge-label').textContent=correct?'CORRECT':item.status==='timeout'?'TIME UP':item.status==='pass'?'PASS':'TRY AGAIN';
     $('judge-title').textContent=correct?'正解！':item.status==='timeout'?'時間切れ':item.status==='pass'?'次につなげよう':'惜しい！';
-    const reason=correct?'登録された正解・別解に一致しました。':item.status==='wrong'?'登録された正解・別解と一致しませんでした。':item.status==='timeout'?'回答時間が終了しました。':'パスした問題も復習できます。';
+    const reason=correct?(QuizCore.matches(item.answer,[item.question.answer,...item.question.aliases])?'登録された正解・別解に一致しました。':`読みが一致しました（${answerMatcher.toReading(item.answer)}）。`):item.status==='wrong'?'登録された正解・別解と一致しませんでした。':item.status==='timeout'?'回答時間が終了しました。':'パスした問題も復習できます。';
     $('judge-detail').textContent=`${item.answer?`あなたの回答：${item.answer} ／ `:''}${reason}`;
     $('points').textContent=correct?`+${item.points}`:'';
     $('canonical').textContent=item.question.answer;

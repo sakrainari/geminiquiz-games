@@ -90,7 +90,7 @@ test('progressive reveal never splits emoji sequences or combining Thai characte
   time=195;game.tick();assert.equal(text.slice(0,game.revealed),'A👨‍👩‍👧‍👦ก้');
 });
 test('all shipped JS parses, all local HTML dependencies exist, generated bank stays synchronized',()=>{
-  for(const file of ['app.js','engine.js','questions.js'])new vm.Script(fs.readFileSync(path.join(__dirname,'../codex',file),'utf8'),{filename:file});
+  for(const file of ['app.js','engine.js','questions.js','reading.js'])new vm.Script(fs.readFileSync(path.join(__dirname,'../codex',file),'utf8'),{filename:file});
   const html=fs.readFileSync(path.join(__dirname,'../codex/index.html'),'utf8');
   for(const [,ref] of html.matchAll(/(?:src|href)="([^"]+\.(?:js|css)(?:\?[^"]*)?)"/g))assert.ok(fs.existsSync(path.join(__dirname,'../codex',ref.split('?')[0])),ref);
   const original=fs.readFileSync(path.join(__dirname,'../voice_answer_quiz.html'),'utf8');

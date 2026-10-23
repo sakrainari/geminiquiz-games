@@ -4,7 +4,7 @@ const vm=require('node:vm');
 const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'..');
-function harness() {
+function harness(tokenizer=null) {
   const elements=new Map(),records=[],timers=new Map();let timerId=0;
   function element(){return {value:'',textContent:'',hidden:false,open:false,disabled:false,style:{},dataset:{},children:[],handlers:{},
     classList:{toggle(){},add(){},remove(){}},addEventListener(type,fn){this.handlers[type]=fn;},
@@ -20,9 +20,10 @@ function harness() {
     phrase(text,isFinal=true){const result=Object.assign([{transcript:text}],{isFinal});this.onresult?.({resultIndex:0,results:[result]});}
   }
   const window={SpeechRecognition:FakeRecognition,addEventListener(){}};
+  if(tokenizer)window.kuromoji={builder:()=>({build:callback=>callback(null,tokenizer)})};
   const context=vm.createContext({document,window,console,performance:{now:()=>0},localStorage:{getItem(){return null;},setItem(){}},
     setInterval(){},setTimeout(fn){timers.set(++timerId,fn);return timerId;},clearTimeout(id){timers.delete(id);}});
-  for(const file of ['quiz-core.js','codex/questions.js','codex/engine.js','codex/voice.js']) {
+  for(const file of ['quiz-core.js','codex/questions.js','codex/engine.js','codex/reading.js']) {
     if(fs.existsSync(path.join(root,file)))vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context);
   }
   const app=fs.readFileSync(path.join(root,'codex/app.js'),'utf8');
@@ -38,6 +39,20 @@ function harness() {
 }
 test('buzzer starts the microphone automatically and keeps continuous recognition enabled',()=>{
   const h=harness();h.buzz();assert.equal(h.records.length,1,'buzzer must start microphone');assert.equal(h.records[0].continuous,true);
+});
+
+test('final speech and manual submission use reading matching while interim speech cannot score',()=>{
+  const h=harness({tokenize:text=>[{surface_form:text,reading:text==='富士山'?'フジサン':text}]});
+  h.hooks.start([{...h.question,answer:'フジサン',aliases:[]}],'Reading test');h.buzz();
+  const rec=h.records[0];rec.phrase('富士山',false);
+  assert.equal(h.hooks.getSession().phase,'answering');
+  assert.match(h.document.getElementById('reading-transcript').textContent,/フジサン/);
+  rec.phrase('富士山');assert.equal(h.hooks.getSession().history[0].status,'correct');
+  h.hooks.start([{...h.question,answer:'フジサン',aliases:[]}],'Manual reading test');h.buzz();
+  h.document.getElementById('answer').value='富士山';
+  h.document.getElementById('answer-form').handlers.submit({preventDefault(){}});
+  assert.equal(h.hooks.getSession().history[0].status,'correct');
+  assert.match(h.document.getElementById('judge-detail').textContent,/読みが一致/);
 });
 test('recognition ending after silence reconnects while the same question accepts answers',()=>{
   const h=harness();h.buzz();if(!h.records.length)h.hooks.startMic();
