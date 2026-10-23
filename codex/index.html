@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#111a29">
+  <meta name="description" content="Codex版の音声早押しクイズ。世界遺産・地理・雑学・海外地名の100問を、声や文字で楽しむ。登録もAPIキーも不要。">
+  <title>CODEX QUIZ — アーケード音声早押しクイズ</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="../quiz-core.js" defer></script>
+  <script src="questions.js" defer></script>
+  <script src="engine.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">ゲームへ移動</a>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="CODEX QUIZ ホーム"><span class="brand-symbol" aria-hidden="true">Q<span>•</span></span><span>CODEX<span class="brand-light">QUIZ</span><small>VOICE / ARCADE</small></span></a>
+      <div class="top-actions"><a class="back-link" href="../index.html">ゲーム一覧<span aria-hidden="true"> ↗</span></a><button id="settings-button" class="icon-button" aria-label="音声と効果音の設定" aria-controls="settings-dialog">⚙</button></div>
+    </header>
+
+    <main id="main">
+      <section id="home" aria-labelledby="home-title">
+        <div class="home-grid">
+          <div class="intro">
+            <p class="eyebrow"><span class="live-dot"></span> CODEX EDITION / 01</p>
+            <h1 id="home-title">ひらめきを、<br><span>声に変えろ。</span></h1>
+            <p class="intro-copy">わかった瞬間、ボタンを押す。<br>声で答えて、知っている世界を広げよう。</p>
+            <div class="mini-machine" aria-hidden="true">
+              <span class="machine-label">READY TO BUZZ?</span>
+              <div class="machine-signal"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+              <div class="demo-buzzer">PUSH<span>YOUR ANSWER</span></div>
+              <span class="machine-caption">その一押しが、クイズのはじまり。</span>
+            </div>
+            <div class="intro-facts"><span><b>100</b> 内蔵問題</span><span><b>4</b> カテゴリ</span><span>登録・APIキー不要</span></div>
+          </div>
+
+          <div class="setup-panel">
+            <div class="panel-heading"><div><p class="eyebrow">SET YOUR ROUND</p><h2>今日の挑戦を選ぼう</h2></div><span class="step-tag">01—03</span></div>
+            <fieldset><legend><span>01</span> 出題カテゴリ</legend>
+              <div class="category-grid" id="categories">
+                <button type="button" class="category selected wide" data-category="all" aria-pressed="true"><span class="category-icon">✦</span><span><b>おまかせミックス</b><small>4カテゴリをシャッフル</small></span><span class="category-count">100問</span></button>
+                <button type="button" class="category" data-category="heritage" aria-pressed="false"><span class="category-icon">♜</span><span><b>世界遺産</b><small>文化・自然をめぐる</small></span><span class="category-count">25</span></button>
+                <button type="button" class="category" data-category="geography" aria-pressed="false"><span class="category-icon">◎</span><span><b>世界の地理</b><small>国・首都・地形</small></span><span class="category-count">25</span></button>
+                <button type="button" class="category" data-category="general" aria-pressed="false"><span class="category-icon">ϟ</span><span><b>一般教養</b><small>科学・文学・雑学</small></span><span class="category-count">25</span></button>
+                <button type="button" class="category" data-category="geosign" aria-pressed="false"><span class="category-icon">文</span><span><b>海外地名・文字</b><small>世界の文字を読む</small></span><span class="category-count">25</span></button>
+              </div>
+            </fieldset>
+            <fieldset><legend><span>02</span> 出題スタイル</legend><div class="segmented" id="styles"><button data-style="buzzer" class="selected" aria-pressed="true">⚡ 早押し</button><button data-style="standard" aria-pressed="false">全文を見て回答</button></div><p class="field-note" id="style-note">少しずつ出る問題文。早く押して正解するとボーナス。</p></fieldset>
+            <div class="round-settings">
+              <fieldset><legend><span>03</span> 問題数</legend><div class="segmented compact" id="counts"><button data-count="5" class="selected" aria-pressed="true">5問</button><button data-count="10" aria-pressed="false">10問</button><button data-count="20" aria-pressed="false">20問</button><button data-count="0" aria-pressed="false">全問</button></div></fieldset>
+              <div class="time-setting"><label for="seconds">回答時間</label><select id="seconds"><option value="8">8秒</option><option value="12" selected>12秒</option><option value="20">20秒</option><option value="0">制限なし</option></select></div>
+            </div>
+            <button id="start" class="primary start-button"><span>この設定でスタート</span><span aria-hidden="true">→</span></button>
+            <p class="setup-note">早押しでマイクON。文字入力も使えます。音声設定は右上から。</p>
+            <button id="weak-start" class="weak-button" disabled>苦手な問題を復習する <span id="weak-count">0問</span></button>
+          </div>
+        </div>
+        <div class="howto"><span class="eyebrow">HOW TO PLAY</span><span><b>01</b> 問題を読む</span><span class="how-arrow">→</span><span><b>02</b> 早押しして回答</span><span class="how-arrow">→</span><span><b>03</b> 解説でひとつ覚える</span></div>
+      </section>
+
+      <section id="play" hidden aria-labelledby="round-title">
+        <div class="round-top"><button id="quit" class="text-button">← 挑戦を終了</button><h1 id="round-title">おまかせミックス</h1><button id="pause" class="outline-button">一時停止</button></div>
+        <div class="hud"><div><span class="eyebrow">ROUND</span><b id="progress">01 <span>/ 05</span></b></div><div class="hud-score"><span class="eyebrow">SCORE</span><b id="score">0000</b></div><div><span class="eyebrow">CORRECT</span><b id="correct">0<span>問</span></b></div></div>
+        <div class="round-progress"><div id="round-progress-bar"></div></div>
+        <div class="question-card">
+          <div class="question-meta"><span id="category-badge" class="badge">世界遺産</span><span id="phase-label">READING</span><button id="hint" class="hint-button">ヒントを見る</button></div>
+          <div class="question-space"><h2 id="question-text"></h2></div>
+          <p id="hint-text" class="hint-box" hidden></p>
+          <div id="reading-status" class="reading-status"><span>文字送り</span><span id="reveal-count">0%</span></div>
+          <div id="answer-clock" class="answer-clock" hidden><div><span>回答受付中 · 発話中は最大6秒延長</span><b id="remaining">12.0<span>秒</span></b></div><div class="clock-track"><div id="clock-bar"></div></div></div>
+        </div>
+        <div id="buzzer-area" class="buzzer-area"><button id="buzz" class="buzzer">早押し！<small>SPACE KEY</small></button><p id="buzzer-help">わかった瞬間に押そう。押してから回答時間が始まります。</p></div>
+        <div id="answer-area" class="answer-area" hidden>
+          <div class="voice-row"><button id="mic" class="mic-button"><span aria-hidden="true">◉</span> 声で回答する</button><div><p id="mic-status">マイクを使うか、下の欄から文字で回答</p><p id="transcript" class="transcript" aria-live="polite"></p></div></div>
+          <form id="answer-form"><label class="sr-only" for="answer">回答を入力</label><input id="answer" type="text" placeholder="答えを入力して Enter" autocomplete="off" enterkeyhint="send"><button class="primary" type="submit">回答する <span aria-hidden="true">↵</span></button></form>
+        </div>
+        <div id="feedback" class="feedback" hidden aria-live="polite">
+          <div class="feedback-top"><span id="judge-symbol" class="judge-symbol">✓</span><div><p id="judge-label" class="eyebrow">CORRECT</p><h2 id="judge-title">正解！</h2><p id="judge-detail"></p></div><span id="points" class="points"></span></div>
+          <div class="answer-reveal"><span>正解</span><b id="canonical"></b></div>
+          <p id="explanation" class="explanation"></p>
+          <details class="alias-details"><summary>別解・読みを確認</summary><p id="aliases"></p></details>
+          <div class="feedback-actions"><button id="rescue" class="text-button">認識違いだった（自己申告）</button><button id="next" class="primary">次の問題へ →</button></div>
+        </div>
+        <div class="game-bottom"><button id="pass" class="text-button">パスして解説を見る</button><span>Space：早押し ／ Enter：次へ</span></div>
+      </section>
+
+      <section id="result" hidden aria-labelledby="result-title">
+        <div class="result-hero"><p class="eyebrow">ROUND COMPLETE</p><h1 id="result-title" tabindex="-1">おつかれさまでした！</h1><p id="result-message"></p><div class="result-numbers"><div><span>正解</span><b id="result-correct"></b></div><div><span>スコア</span><b id="result-score"></b></div><div><span>自己申告</span><b id="result-rescued"></b></div></div><div class="result-buttons"><button id="retry-wrong" class="primary">間違えた問題だけ復習</button><button id="again" class="outline-button">新しい問題で挑戦</button><button id="home-button" class="text-button">ホームに戻る</button></div></div>
+        <div class="review-heading"><h2>今回の振り返り</h2><span>解説を開いて、もう一度。</span></div><div id="review-list"></div>
+      </section>
+      <p id="notice" class="notice" role="status" hidden></p>
+    </main>
+    <footer class="footer"><span>CODEX QUIZ <span class="footer-dot">/</span> 考える。声にする。覚える。</span><span>100 QUESTIONS · NO API KEY</span></footer>
+  </div>
+
+  <dialog id="settings-dialog"><form method="dialog"><div class="dialog-heading"><h2>音声と効果音</h2><button class="icon-button" aria-label="設定を閉じる">×</button></div><label class="switch-row"><span><b>問題・解説の読み上げ</b><small>端末の日本語音声を使います</small></span><input id="tts-setting" type="checkbox"></label><label class="switch-row"><span><b>効果音</b><small>早押し・正解・不正解の音</small></span><input id="sound-setting" type="checkbox" checked></label><label class="switch-row"><span><b>早押しでマイクを自動起動</b><small>回答中は聞き取り続けます。ブラウザの許可が必要です</small></span><input id="mic-setting" type="checkbox" checked></label><p id="support-note" class="field-note">音声の利用可否は端末とブラウザにより異なります。文字入力はいつでも使えます。</p><button class="primary dialog-done">設定を閉じる</button></form></dialog>
+  <dialog id="pause-dialog"><p class="eyebrow">TAKE A BREATH</p><h2>一時停止中</h2><p>問題と回答時間を止めています。</p><button id="resume" class="primary">続きをプレイ →</button></dialog>
+  <dialog id="quit-dialog"><h2>今回の挑戦を終了しますか？</h2><p>ここまでの回答は振り返りに残します。未回答の問題は採点しません。</p><div class="dialog-buttons"><button id="cancel-quit" class="outline-button">続ける</button><button id="confirm-quit" class="primary">終了して結果へ</button></div></dialog>
+  <noscript><p class="noscript">このゲームを遊ぶにはJavaScriptを有効にしてください。</p></noscript>
+</body>
+</html>
